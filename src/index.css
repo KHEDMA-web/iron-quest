@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Oswald', sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  --color-bg: #14171d;
+  --color-surface: #1d222b;
+  --color-surface2: #242a35;
+  --color-line: #2e3644;
+  --color-ink: #edeff3;
+  --color-muted: #8b93a1;
+  --color-accent: #ffb020;
+  --color-accent-dark: #3a2f14;
+  --color-green: #57c88b;
+  --color-red: #e06c6c;
+  --color-blue: #6fa8dc;
+  --color-purple: #c08bd6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+input:focus,
+textarea:focus,
+button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+button {
+  cursor: pointer;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #5b6678;
+}
