@@ -1,22 +1,21 @@
 import { useState } from 'react'
 import type { CharacterData } from '../types'
-import { archOf } from '../data/classes'
 import { computeGame } from '../lib/gameCompute'
-import { Barbell } from './Barbell'
+import { useToasts } from '../hooks/useToasts'
+import { useGameEvents } from '../hooks/useGameEvents'
+import { GameHeader } from './GameHeader'
+import { ToastStack } from './ToastStack'
+import { ProfileScreen } from './ProfileScreen'
 import { DayTab } from './tabs/DayTab'
-import { WeightTab } from './tabs/WeightTab'
 import { ProgramTab } from './tabs/ProgramTab'
 import { NutritionTab } from './tabs/NutritionTab'
-import { ShoppingTab } from './tabs/ShoppingTab'
 import { GuildTab } from './tabs/GuildTab'
 
 const TABS = [
   ['jour', 'Jour'],
-  ['poids', 'Poids'],
-  ['prog', 'Prog'],
-  ['nutri', 'Nutri'],
-  ['courses', '🛒'],
-  ['guilde', '⚔️'],
+  ['prog', 'Programme'],
+  ['nutri', 'Nutrition'],
+  ['guilde', 'Guilde'],
 ] as const
 
 type TabId = (typeof TABS)[number][0]
@@ -32,100 +31,57 @@ interface GameProps {
 export function Game({ data, onUpdate, onSwitch, onDelete, saveErr }: GameProps) {
   const [tab, setTab] = useState<TabId>('jour')
   const [resetArmed, setResetArmed] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   const game = computeGame(data)
-  const { profile, cls, rank, nextRank, lvl, into, need, current, goalDisplay, delta, week, phase, reached, dir, remaining, proj } = {
-    ...game,
-    goalDisplay: profileGoal(data),
-  }
+  const { toasts, push } = useToasts()
+  useGameEvents(game, push)
 
   return (
     <div className="mx-auto min-h-screen max-w-[520px] px-3.5 pb-10 pt-4">
-      <header className="px-0.5 pt-0.5">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl border-2 border-accent bg-surface2 text-2xl" aria-hidden>
-            {cls.emoji}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="m-0 font-display text-lg font-semibold">
-              {profile.pseudo} <span className="text-xs font-normal text-muted">· {cls.name}</span>
-            </p>
-            <p className="m-0 mt-px text-xs text-accent">
-              {rank.icon} {rank.name} · Niveau {lvl}
-              {nextRank && <span className="text-muted"> · {nextRank.name} au niv. {nextRank.min}</span>}
-            </p>
-            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface2" role="progressbar" aria-valuenow={into} aria-valuemax={need} aria-label="Progression du niveau">
-              <div className="h-full bg-purple transition-[width] duration-200" style={{ width: `${(into / need) * 100}%` }} />
-            </div>
-            <p className="m-0 mt-0.5 text-[10.5px] text-muted">
-              {into} / {need} XP → niv. {lvl + 1}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="m-0 font-display text-2xl font-bold">{current.toFixed(1)}</p>
-            <p className="m-0 text-[10.5px] text-muted">kg · obj. {goalDisplay}</p>
-            {delta !== null && (
-              <p className={`m-0 text-[11px] ${(dir >= 0 ? delta >= 0 : delta <= 0) ? 'text-green' : 'text-red'}`}>
-                {delta >= 0 ? '+' : ''}
-                {delta} kg
-              </p>
-            )}
-          </div>
+      <ToastStack toasts={toasts} />
+      <GameHeader game={game} onOpenProfile={() => setProfileOpen(true)} />
+
+      {profileOpen ? (
+        <div className="mt-3">
+          <ProfileScreen
+            data={data}
+            game={game}
+            persist={onUpdate}
+            onBack={() => setProfileOpen(false)}
+            onSwitch={onSwitch}
+            resetArmed={resetArmed}
+            onDeleteClick={() => (resetArmed ? onDelete() : setResetArmed(true))}
+          />
         </div>
+      ) : (
+        <>
+          <nav className="my-3 flex gap-1 rounded-xl bg-surface p-1" role="tablist" aria-label="Sections">
+            {TABS.map(([id, label]) => (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={tab === id}
+                onClick={() => setTab(id)}
+                className={`flex-1 rounded-lg py-2.5 font-display text-xs font-semibold uppercase tracking-wide transition-colors duration-150 ${
+                  tab === id ? 'bg-accent text-[#1A1A1A]' : 'bg-transparent text-muted'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
 
-        <div className="mt-1.5 text-center">
-          <Barbell pct={game.barbellPct} label={game.barbellLabel} />
-          <p className="m-0 mb-0.5 text-[11.5px] text-muted">
-            {reached ? (
-              <b className="text-green">🏆 QUÊTE PRINCIPALE ACCOMPLIE — {goalDisplay} kg atteints ! Fixe-toi un nouvel objectif.</b>
-            ) : dir === 0 ? (
-              `Semaine ${week} · Phase ${phase.id} (${phase.title}) — ta quête : la constance`
-            ) : (
-              <>
-                Semaine {week} · Phase {phase.id} ({phase.title}) — encore <b className="text-accent">{remaining} kg</b>{' '}
-                {archOf(profile.cls).verb}
-                {proj?.date && <> · arrivée ≈ {proj.date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</>}
-              </>
-            )}
-          </p>
-        </div>
-      </header>
+          {saveErr && <p className="rounded-2xl border border-line bg-surface p-4 text-sm text-red">Sauvegarde échouée — refais une action pour réessayer.</p>}
 
-      <nav className="my-3 flex gap-1 rounded-xl bg-surface p-1">
-        {TABS.map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={`flex-1 rounded-lg py-2.5 font-display text-xs font-semibold uppercase tracking-wide ${
-              tab === id ? 'bg-accent text-[#1A1A1A]' : 'bg-transparent text-muted'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      {saveErr && <p className="rounded-2xl border border-line bg-surface p-4 text-sm text-red">Sauvegarde échouée — refais une action pour réessayer.</p>}
-
-      {tab === 'jour' && <DayTab data={data} game={game} persist={onUpdate} />}
-      {tab === 'poids' && <WeightTab data={data} game={game} persist={onUpdate} />}
-      {tab === 'prog' && (
-        <ProgramTab
-          data={data}
-          game={game}
-          persist={onUpdate}
-          onSwitch={onSwitch}
-          resetArmed={resetArmed}
-          onDeleteClick={() => (resetArmed ? onDelete() : setResetArmed(true))}
-        />
+          <div key={tab} role="tabpanel" className="tab-panel">
+            {tab === 'jour' && <DayTab data={data} game={game} persist={onUpdate} />}
+            {tab === 'prog' && <ProgramTab data={data} game={game} persist={onUpdate} />}
+            {tab === 'nutri' && <NutritionTab data={data} game={game} persist={onUpdate} />}
+            {tab === 'guilde' && <GuildTab game={game} />}
+          </div>
+        </>
       )}
-      {tab === 'nutri' && <NutritionTab game={game} />}
-      {tab === 'courses' && <ShoppingTab data={data} game={game} persist={onUpdate} />}
-      {tab === 'guilde' && <GuildTab game={game} />}
     </div>
   )
-}
-
-function profileGoal(data: CharacterData) {
-  return data.profile!.goal
 }

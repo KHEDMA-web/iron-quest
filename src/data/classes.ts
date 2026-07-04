@@ -77,11 +77,26 @@ export const archOf = (clsId: ClassId): Arch => {
   return ARCHS.find((a) => a.id === arch)!
 }
 
-/** Mifflin-St Jeor × activité modérée + delta de classe */
-export function computeTargets(cls: ClassId, w: number, h: number, age: number, sex: 'H' | 'F') {
+export interface TargetsDetail {
+  bmr: number
+  tdee: number
+  delta: number
+  kcal: number
+  protPerKg: number
+  prot: number
+}
+
+/** Mifflin-St Jeor × activité modérée + delta de classe, avec le détail du calcul (pour l'affichage). */
+export function computeTargetsDetailed(cls: ClassId, w: number, h: number, age: number, sex: 'H' | 'F'): TargetsDetail {
   const bmr = 10 * w + 6.25 * h - 5 * age + (sex === 'F' ? -161 : 5)
   const tdee = bmr * 1.55
-  const kcal = Math.max(1500, Math.round((tdee + CLASSES[cls].delta) / 50) * 50)
-  const prot = Math.round((w * CLASSES[cls].protPerKg) / 5) * 5
+  const { delta, protPerKg } = CLASSES[cls]
+  const kcal = Math.max(1500, Math.round((tdee + delta) / 50) * 50)
+  const prot = Math.round((w * protPerKg) / 5) * 5
+  return { bmr: Math.round(bmr), tdee: Math.round(tdee), delta, kcal, protPerKg, prot }
+}
+
+export function computeTargets(cls: ClassId, w: number, h: number, age: number, sex: 'H' | 'F') {
+  const { kcal, prot } = computeTargetsDetailed(cls, w, h, age, sex)
   return { kcal, prot }
 }

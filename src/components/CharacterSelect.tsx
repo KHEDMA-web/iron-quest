@@ -90,7 +90,7 @@ export function CharacterSelect({ store, saveErr, onSelect, onCreate }: Characte
               <button
                 key={id}
                 onClick={() => onSelect(id)}
-                className="mb-2 flex w-full items-center gap-3 rounded-2xl border-2 border-line bg-surface px-3.5 py-3 text-ink"
+                className="mb-2 flex w-full items-center gap-3 rounded-2xl border-2 border-line bg-surface px-3.5 py-3 text-ink transition-colors duration-150 hover:border-accent"
               >
                 <span className="text-3xl">{c.emoji}</span>
                 <span className="min-w-0 flex-1 text-left">
@@ -125,8 +125,8 @@ export function CharacterSelect({ store, saveErr, onSelect, onCreate }: Characte
                   setObErr('')
                 }}
                 aria-pressed={obArch === a.id}
-                className={`flex-1 rounded-[10px] border px-1 py-3 text-center ${
-                  obArch === a.id ? 'border-accent bg-surface2 text-ink' : 'border-line bg-transparent text-muted'
+                className={`flex-1 rounded-[10px] border px-1 py-3 text-center transition-colors duration-150 ${
+                  obArch === a.id ? 'glow-accent border-accent bg-surface2 text-ink' : 'border-line bg-transparent text-muted hover:border-accent/60'
                 }`}
               >
                 <span className="block text-[22px]">{a.emoji}</span>
@@ -149,8 +149,8 @@ export function CharacterSelect({ store, saveErr, onSelect, onCreate }: Characte
                       setObErr('')
                     }}
                     aria-pressed={obClass === c.id}
-                    className={`mb-2 flex w-full items-center gap-3 rounded-2xl border-2 px-3.5 py-3 text-left text-ink ${
-                      obClass === c.id ? 'border-accent bg-surface2' : 'border-line bg-surface'
+                    className={`mb-2 flex w-full items-center gap-3 rounded-2xl border-2 px-3.5 py-3 text-left text-ink transition-colors duration-150 ${
+                      obClass === c.id ? 'glow-accent border-accent bg-surface2' : 'border-line bg-surface hover:border-accent/60'
                     }`}
                   >
                     <span className="text-3xl">{c.emoji}</span>
@@ -269,7 +269,10 @@ export function CharacterSelect({ store, saveErr, onSelect, onCreate }: Characte
               )}
 
               {obErr && <p className="mt-2 text-center text-sm text-red">{obErr}</p>}
-              <button onClick={submit} className="mt-3 w-full rounded-[10px] bg-accent px-4 py-3 font-display text-sm font-semibold uppercase tracking-wide text-[#1A1A1A]">
+              <button
+                onClick={submit}
+                className="mt-3 w-full rounded-[10px] bg-accent px-4 py-3 font-display text-sm font-semibold uppercase tracking-wide text-[#1A1A1A] transition-transform duration-100 active:scale-[0.97]"
+              >
                 LANCER LA PARTIE {cls.emoji}
               </button>
               <p className="mt-3 text-center text-xs text-muted">

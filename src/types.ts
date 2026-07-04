@@ -45,6 +45,8 @@ export interface Meal {
   kcal: number
   p: number
   items: string[]
+  /** Étapes de préparation, dans l'ordre. */
+  steps: string[]
   shake?: boolean
   custom?: boolean
   from?: string
@@ -59,6 +61,7 @@ export interface MealOverride {
   items: string[]
   kcal: number
   p: number
+  steps?: string[]
   custom?: boolean
   from?: string
 }

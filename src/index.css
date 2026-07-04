@@ -51,3 +51,101 @@ input::placeholder,
 textarea::placeholder {
   color: #5b6678;
 }
+
+@keyframes toast-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.96);
+  }
+  8% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+
+.toast-pop {
+  animation: toast-pop 4.2s ease forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-pop {
+    animation: none;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-panel {
+  animation: fade-in 0.18s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-panel {
+    animation: none;
+  }
+}
+
+.plate {
+  transition: opacity 300ms ease, filter 300ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plate {
+    transition: none;
+  }
+}
+
+/* Langage visuel "loot" : lueur autour de ce qui est acquis/actif/sélectionné. */
+.glow-accent {
+  box-shadow: 0 0 20px -4px rgba(255, 176, 32, 0.55);
+}
+
+.glow-green {
+  box-shadow: 0 0 14px -2px rgba(87, 200, 139, 0.6);
+}
+
+.glow-purple {
+  box-shadow: 0 0 16px -3px rgba(192, 139, 214, 0.55);
+}
+
+.glow-blue {
+  box-shadow: 0 0 14px -2px rgba(111, 168, 220, 0.55);
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 10px -2px rgba(255, 176, 32, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px 2px rgba(255, 176, 32, 0.85);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-glow {
+    animation: none;
+    box-shadow: 0 0 14px -2px rgba(255, 176, 32, 0.6);
+  }
+}

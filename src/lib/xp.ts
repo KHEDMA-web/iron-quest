@@ -1,5 +1,6 @@
 import type { CharacterData, Rank } from '../types'
 import { isoWeek } from './dates'
+import { computeStreak, streakMilestonesReached } from './streak'
 
 export const RANKS: Rank[] = [
   { min: 1, name: 'Recrue', icon: '🌱' },
@@ -13,7 +14,7 @@ export const RANKS: Rank[] = [
 
 export const rankOf = (lvl: number): Rank => [...RANKS].reverse().find((r) => lvl >= r.min)!
 
-export const XP = { workout: 50, meal: 5, perfectDay: 20, weighIn: 30, fullWeek: 100 }
+export const XP = { workout: 50, meal: 5, perfectDay: 20, weighIn: 30, fullWeek: 100, streakMilestone: 60 }
 
 export function levelFromXp(xp: number) {
   let lvl = 1
@@ -47,5 +48,7 @@ export function computeXp(d: CharacterData, weeklyTarget: number) {
   })
   const fullWeeks = Object.values(byWeek).filter((n) => n >= weeklyTarget).length
   xp += fullWeeks * XP.fullWeek
-  return { xp, perfectDays, fullWeeks }
+  const streakMilestones = streakMilestonesReached(computeStreak(d).longest)
+  xp += streakMilestones * XP.streakMilestone
+  return { xp, perfectDays, fullWeeks, streakMilestones }
 }

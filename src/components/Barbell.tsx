@@ -18,6 +18,7 @@ export function Barbell({ pct, label }: BarbellProps) {
   const mk = (x: number, frac: number, k: string) => (
     <rect
       key={k}
+      className="plate"
       x={x}
       y={cy - 27}
       width={pw}
@@ -27,6 +28,7 @@ export function Barbell({ pct, label }: BarbellProps) {
       opacity={frac < 1 ? 0.25 + 0.6 * frac : 1}
       stroke={ACCENT_DARK}
       strokeWidth="1"
+      style={frac >= 1 ? { filter: 'drop-shadow(0 0 4px rgba(255,176,32,0.9))' } : undefined}
     />
   )
 

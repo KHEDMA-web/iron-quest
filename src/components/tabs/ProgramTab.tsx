@@ -3,18 +3,16 @@ import type { GameCompute } from '../../lib/gameCompute'
 import { applyExoName } from '../../lib/gameCompute'
 import { PHASES } from '../../data/phases'
 import { DAYS_FR } from '../../lib/dates'
+import { CalendarMonth } from '../CalendarMonth'
 
 interface ProgramTabProps {
   data: CharacterData
   game: GameCompute
   persist: (next: CharacterData) => void
-  onSwitch: () => void
-  resetArmed: boolean
-  onDeleteClick: () => void
 }
 
-export function ProgramTab({ data, game, persist, onSwitch, resetArmed, onDeleteClick }: ProgramTabProps) {
-  const { cls, phase, trainDays, weeklyTarget } = game
+export function ProgramTab({ data, game, persist }: ProgramTabProps) {
+  const { cls, phase, trainDays, weeklyTarget, tk } = game
 
   const clearSwap = (orig: string) => {
     const next = { ...data.exoSwaps }
@@ -22,8 +20,12 @@ export function ProgramTab({ data, game, persist, onSwitch, resetArmed, onDelete
     persist({ ...data, exoSwaps: next })
   }
 
+  const workoutDays = new Set(data.workouts.map((w) => w.day))
+
   return (
     <section>
+      <CalendarMonth workoutDays={workoutDays} trainDays={trainDays} todayKey={tk} />
+
       <div className="mb-3 rounded-2xl border border-line bg-surface p-4">
         <p className="m-0 font-display text-[14.5px] font-semibold uppercase tracking-wide">Ton plan sur la durée</p>
         <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
@@ -74,15 +76,6 @@ export function ProgramTab({ data, game, persist, onSwitch, resetArmed, onDelete
           </div>
         )
       })}
-
-      <div className="rounded-2xl border border-line bg-surface p-4 text-center">
-        <button onClick={onSwitch} className="mb-2 w-full rounded-[10px] border border-line px-4 py-2.5 text-sm text-muted">
-          👥 Changer de personnage
-        </button>
-        <button onClick={onDeleteClick} className={`w-full rounded-[10px] border px-4 py-2.5 text-sm ${resetArmed ? 'border-red text-red' : 'border-line text-muted'}`}>
-          {resetArmed ? 'Confirmer : supprimer CE personnage et ses données ?' : 'Supprimer ce personnage'}
-        </button>
-      </div>
     </section>
   )
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { CharacterData } from '../../types'
+import type { CharacterData, Meal } from '../../types'
 import type { GameCompute } from '../../lib/gameCompute'
 import { applyExoName } from '../../lib/gameCompute'
 import { ALT } from '../../data/phases'
@@ -88,9 +88,30 @@ export function DayTab({ data, game, persist }: DayTabProps) {
     if (!src) return
     persist({
       ...data,
-      mealOverrides: { ...data.mealOverrides, [`${dow}-${mealId}`]: { items: src.items, kcal: src.kcal, p: src.p, from: MENUS[otherDay].name } },
+      mealOverrides: { ...data.mealOverrides, [`${dow}-${mealId}`]: { items: src.items, kcal: src.kcal, p: src.p, steps: src.steps, from: MENUS[otherDay].name } },
     })
     setEditMeal(null)
+  }
+
+  /** Repioche une autre recette pour ce créneau (parmi les 7 jours du plan) : ingrédients, kcal et protéines changent avec. */
+  const regenerateMeal = (mealId: string) => {
+    const current = meals.find((m) => m.id === mealId)
+    if (!current) return
+    const signature = current.items.join('|')
+    const candidates: { menuName: string; meal: Meal }[] = []
+    MENUS.forEach((mn) => {
+      const m = mn.meals.find((x) => x.id === mealId)
+      if (m && m.items.join('|') !== signature) candidates.push({ menuName: mn.name, meal: m })
+    })
+    if (!candidates.length) return
+    const pick = candidates[Math.floor(Math.random() * candidates.length)]
+    persist({
+      ...data,
+      mealOverrides: {
+        ...data.mealOverrides,
+        [`${dow}-${mealId}`]: { items: pick.meal.items, kcal: pick.meal.kcal, p: pick.meal.p, steps: pick.meal.steps, from: `régénéré, ${pick.menuName.toLowerCase()}` },
+      },
+    })
   }
 
   const sum = (f: (m: (typeof meals)[number]) => number) => meals.filter((m) => mealsToday[m.id]).reduce((s, m) => s + (f(m) || 0), 0)
@@ -177,7 +198,7 @@ export function DayTab({ data, game, persist }: DayTabProps) {
                       onClick={() => setExoDone({ ...exoDone, [applied]: !done })}
                       aria-pressed={done}
                       aria-label={`${applied} terminé`}
-                      className={`h-9 w-9 shrink-0 rounded-[9px] text-base font-bold ${done ? 'bg-green text-bg' : 'bg-surface2 text-muted'}`}
+                      className={`h-9 w-9 shrink-0 rounded-[9px] text-base font-bold ${done ? 'glow-green bg-green text-bg' : 'bg-surface2 text-muted'}`}
                     >
                       ✓
                     </button>
@@ -212,7 +233,10 @@ export function DayTab({ data, game, persist }: DayTabProps) {
                 </div>
               )
             })}
-            <button onClick={finishWorkout} className="mt-2.5 w-full rounded-[10px] bg-accent px-4 py-3 font-display text-sm font-semibold uppercase tracking-wide text-[#1A1A1A]">
+            <button
+              onClick={finishWorkout}
+              className="mt-2.5 w-full rounded-[10px] bg-accent px-4 py-3 font-display text-sm font-semibold uppercase tracking-wide text-[#1A1A1A] transition-transform duration-100 active:scale-[0.97]"
+            >
               TERMINER LA SÉANCE · +{XP.workout} XP
             </button>
           </>
@@ -259,7 +283,7 @@ export function DayTab({ data, game, persist }: DayTabProps) {
                   onClick={() => toggleMeal(m.id)}
                   aria-pressed={on}
                   aria-label={`${m.title} mangé`}
-                  className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 text-sm font-bold text-bg"
+                  className={`mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 text-sm font-bold text-bg ${on ? 'glow-green' : ''}`}
                   style={{ background: on ? '#57C88B' : 'transparent', borderColor: on ? '#57C88B' : '#8B93A1' }}
                 >
                   {on ? '✓' : ''}
@@ -277,6 +301,14 @@ export function DayTab({ data, game, persist }: DayTabProps) {
                   </div>
                   {!editing && <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted">{m.items.join(' · ')}</p>}
                 </div>
+                <button
+                  onClick={() => regenerateMeal(m.id)}
+                  aria-label={`Régénérer ${m.title}`}
+                  title="Piocher une autre recette pour ce repas (kcal/protéines recalculés)"
+                  className="h-9 w-8 shrink-0 rounded-[9px] border border-line bg-transparent text-[15px] text-purple"
+                >
+                  🎲
+                </button>
                 <button
                   onClick={() => (editing ? setEditMeal(null) : openMealEditor(m))}
                   aria-label={`Modifier ${m.title}`}

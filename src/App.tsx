@@ -1,46 +1,25 @@
-import { useState } from 'react'
-import type { CharacterData, Store } from './types'
-import { loadStore, saveStore } from './lib/storage'
-import { syncLeaderboard } from './lib/supabase'
+import { useEffect } from 'react'
+import { useCharacterStore } from './hooks/useCharacterStore'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { CharacterSelect } from './components/CharacterSelect'
 import { Game } from './components/Game'
 
 export default function App() {
-  const [store, setStore] = useState<Store>(() => loadStore())
-  const [saveErr, setSaveErr] = useState(false)
+  const { store, active, saveErr, selectCharacter, createCharacter, updateActive, switchCharacter, deleteActive } = useCharacterStore()
 
-  const persistStore = (next: Store) => {
-    setStore(next)
-    setSaveErr(!saveStore(next))
-  }
-
-  const active = store.active && store.profiles[store.active] ? store.profiles[store.active] : null
-
-  if (!active) {
-    return (
-      <CharacterSelect
-        store={store}
-        saveErr={saveErr}
-        onSelect={(id) => persistStore({ ...store, active: id })}
-        onCreate={(id, char) => persistStore({ profiles: { ...store.profiles, [id]: char }, active: id })}
-      />
-    )
-  }
+  // Onboarding <-> jeu change entièrement de contenu : repartir en haut de page.
+  // Dépend de l'id (store.active), pas de l'objet `active` qui change de référence à chaque sauvegarde.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [store.active])
 
   return (
-    <Game
-      data={active}
-      saveErr={saveErr}
-      onUpdate={(next: CharacterData) => {
-        persistStore({ ...store, profiles: { ...store.profiles, [store.active as string]: next } })
-        void syncLeaderboard(next)
-      }}
-      onSwitch={() => persistStore({ ...store, active: null })}
-      onDelete={() => {
-        const nextProfiles = { ...store.profiles }
-        delete nextProfiles[store.active as string]
-        persistStore({ profiles: nextProfiles, active: null })
-      }}
-    />
+    <ErrorBoundary>
+      {active ? (
+        <Game data={active} saveErr={saveErr} onUpdate={updateActive} onSwitch={switchCharacter} onDelete={deleteActive} />
+      ) : (
+        <CharacterSelect store={store} saveErr={saveErr} onSelect={selectCharacter} onCreate={createCharacter} />
+      )}
+    </ErrorBoundary>
   )
 }

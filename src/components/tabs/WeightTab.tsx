@@ -54,40 +54,51 @@ export function WeightTab({ data, game, persist }: WeightTabProps) {
         </div>
       </div>
 
-      {chartData.length >= 2 && (
-        <div className="mb-3 rounded-2xl border border-line bg-surface p-4">
-          <p className="m-0 font-display text-[14.5px] font-semibold uppercase tracking-wide">Ta courbe</p>
-          <div className="h-[220px] w-full">
-            <ResponsiveContainer>
-              <LineChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                <CartesianGrid stroke="#2E3644" strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fill: '#8B93A1', fontSize: 11 }} />
-                <YAxis domain={[yMin, yMax]} tick={{ fill: '#8B93A1', fontSize: 11 }} />
-                <Tooltip contentStyle={{ background: '#242A35', border: '1px solid #2E3644', borderRadius: 8, color: '#EDEFF3' }} />
-                <ReferenceLine y={goal} stroke="#FFB020" strokeDasharray="6 4" label={{ value: `${goal} kg`, fill: '#FFB020', fontSize: 11, position: 'insideTopRight' }} />
-                <Line type="monotone" dataKey="poids" stroke="#FFB020" strokeWidth={2.5} dot={{ r: 3, fill: '#FFB020' }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          {proj && dir !== 0 && (
-            <p className="mt-2 text-[12.5px] leading-relaxed text-muted">
-              {proj.date ? (
-                <>
-                  Rythme : <b className="text-accent">{Math.abs(proj.slope * 30).toFixed(1)} kg/mois</b>.
-                  {dir > 0 && proj.slope * 30 > 1.3 && ' ⚠️ Un peu vite — au-delà de ~1,3 kg/mois, une part croissante est du gras. Retire ~200 kcal/jour.'}
-                  {dir > 0 && proj.slope * 30 <= 1.3 && ' Rythme idéal pour du muscle propre, continue pareil.'}
-                  {dir < 0 && Math.abs(proj.slope * 30) > 4 && ' ⚠️ Trop rapide — tu risques de perdre du muscle. Remange ~200 kcal/jour.'}
-                  {dir < 0 && Math.abs(proj.slope * 30) <= 4 && ' Bon rythme de sèche : le muscle reste, le gras part.'}
-                </>
-              ) : dir > 0 ? (
-                "Stagnation → ajoute 300 kcal/jour : +30 g d'avoine et +10 g de beurre de cacahuète dans le shake. Re-regarde dans 2 semaines."
-              ) : (
-                'Stagnation → retire 200 kcal/jour (réduis les féculents du dîner) et vérifie que tu comptes bien tout. Re-regarde dans 2 semaines.'
-              )}
+      <div className="mb-3 rounded-2xl border border-line bg-surface p-4">
+        <p className="m-0 font-display text-[14.5px] font-semibold uppercase tracking-wide">Ta courbe</p>
+        {chartData.length >= 2 ? (
+          <>
+            <div className="h-[220px] w-full">
+              <ResponsiveContainer>
+                <LineChart data={chartData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                  <CartesianGrid stroke="#2E3644" strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={{ fill: '#8B93A1', fontSize: 11 }} />
+                  <YAxis domain={[yMin, yMax]} tick={{ fill: '#8B93A1', fontSize: 11 }} />
+                  <Tooltip contentStyle={{ background: '#242A35', border: '1px solid #2E3644', borderRadius: 8, color: '#EDEFF3' }} />
+                  <ReferenceLine y={goal} stroke="#FFB020" strokeDasharray="6 4" label={{ value: `${goal} kg`, fill: '#FFB020', fontSize: 11, position: 'insideTopRight' }} />
+                  <Line type="monotone" dataKey="poids" stroke="#FFB020" strokeWidth={2.5} dot={{ r: 3, fill: '#FFB020' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            {proj && dir !== 0 && (
+              <p className="mt-2 text-[12.5px] leading-relaxed text-muted">
+                {proj.date ? (
+                  <>
+                    Rythme : <b className="text-accent">{Math.abs(proj.slope * 30).toFixed(1)} kg/mois</b>.
+                    {dir > 0 && proj.slope * 30 > 1.3 && ' ⚠️ Un peu vite — au-delà de ~1,3 kg/mois, une part croissante est du gras. Retire ~200 kcal/jour.'}
+                    {dir > 0 && proj.slope * 30 <= 1.3 && ' Rythme idéal pour du muscle propre, continue pareil.'}
+                    {dir < 0 && Math.abs(proj.slope * 30) > 4 && ' ⚠️ Trop rapide — tu risques de perdre du muscle. Remange ~200 kcal/jour.'}
+                    {dir < 0 && Math.abs(proj.slope * 30) <= 4 && ' Bon rythme de sèche : le muscle reste, le gras part.'}
+                  </>
+                ) : dir > 0 ? (
+                  "Stagnation → ajoute 300 kcal/jour : +30 g d'avoine et +10 g de beurre de cacahuète dans le shake. Re-regarde dans 2 semaines."
+                ) : (
+                  'Stagnation → retire 200 kcal/jour (réduis les féculents du dîner) et vérifie que tu comptes bien tout. Re-regarde dans 2 semaines.'
+                )}
+              </p>
+            )}
+          </>
+        ) : (
+          <div className="flex h-[140px] flex-col items-center justify-center gap-1.5 text-center">
+            <span className="text-2xl" aria-hidden>
+              📈
+            </span>
+            <p className="m-0 text-[12.5px] text-muted">
+              {chartData.length === 0 ? 'Ta courbe apparaîtra ici dès ta première pesée.' : 'Encore une pesée et ta courbe de progression apparaît ici.'}
             </p>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       {data.weighIns.length > 0 && (
         <div className="mb-3 rounded-2xl border border-line bg-surface p-4">
