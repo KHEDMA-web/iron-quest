@@ -17,6 +17,8 @@ export interface Achievement {
   name: string
   desc: string
   done: boolean
+  current: number
+  target: number
 }
 
 export interface GameCompute {
@@ -119,18 +121,22 @@ export function computeGame(data: CharacterData): GameCompute {
   const weekWeighIn = data.weighIns.some((w) => isoWeek(w.date.slice(0, 10)) === wkIso)
   const perfectToday = meals.every((m) => mealsToday[m.id])
 
+  const goalDistanceTotal = Math.abs(goal - startW) || 1
+  const goalDistanceDone = Math.min(Math.abs(current - startW), goalDistanceTotal)
+  const clamp = (n: number, target: number) => Math.min(n, target)
+
   const achievements: Achievement[] = [
-    { icon: '🩸', name: 'Premier sang', desc: 'Première séance terminée', done: data.workouts.length >= 1 },
-    { icon: '🔟', name: "L'habitué", desc: '10 séances', done: data.workouts.length >= 10 },
-    { icon: '🏋️', name: 'Machine de guerre', desc: '50 séances', done: data.workouts.length >= 50 },
-    { icon: '💯', name: 'Vétéran du fer', desc: '100 séances', done: data.workouts.length >= 100 },
-    { icon: '📅', name: 'Semaine parfaite', desc: `Une semaine à ${weeklyTarget}/${weeklyTarget} séances`, done: fullWeeks >= 1 },
-    { icon: '🗓️', name: 'Le métronome', desc: '5 semaines parfaites', done: fullWeeks >= 5 },
-    { icon: '🍽️', name: 'Discipline de moine', desc: '10 journées nutrition parfaites', done: perfectDays >= 10 },
-    { icon: '⚖️', name: 'Suivi sérieux', desc: '8 pesées enregistrées', done: data.weighIns.length >= 8 },
-    { icon: '🥈', name: 'Guerrier', desc: 'Atteindre le niveau 7', done: lvl >= 7 },
-    { icon: '💎', name: 'Champion', desc: 'Atteindre le niveau 16', done: lvl >= 16 },
-    { icon: '🏆', name: 'Quête accomplie', desc: `Atteindre ${goal} kg`, done: reached },
+    { icon: '🩸', name: 'Premier sang', desc: 'Première séance terminée', done: data.workouts.length >= 1, current: clamp(data.workouts.length, 1), target: 1 },
+    { icon: '🔟', name: "L'habitué", desc: '10 séances', done: data.workouts.length >= 10, current: clamp(data.workouts.length, 10), target: 10 },
+    { icon: '🏋️', name: 'Machine de guerre', desc: '50 séances', done: data.workouts.length >= 50, current: clamp(data.workouts.length, 50), target: 50 },
+    { icon: '💯', name: 'Vétéran du fer', desc: '100 séances', done: data.workouts.length >= 100, current: clamp(data.workouts.length, 100), target: 100 },
+    { icon: '📅', name: 'Semaine parfaite', desc: `Une semaine à ${weeklyTarget}/${weeklyTarget} séances`, done: fullWeeks >= 1, current: clamp(fullWeeks, 1), target: 1 },
+    { icon: '🗓️', name: 'Le métronome', desc: '5 semaines parfaites', done: fullWeeks >= 5, current: clamp(fullWeeks, 5), target: 5 },
+    { icon: '🍽️', name: 'Discipline de moine', desc: '10 journées nutrition parfaites', done: perfectDays >= 10, current: clamp(perfectDays, 10), target: 10 },
+    { icon: '⚖️', name: 'Suivi sérieux', desc: '8 pesées enregistrées', done: data.weighIns.length >= 8, current: clamp(data.weighIns.length, 8), target: 8 },
+    { icon: '🥈', name: 'Guerrier', desc: 'Atteindre le niveau 7', done: lvl >= 7, current: clamp(lvl, 7), target: 7 },
+    { icon: '💎', name: 'Champion', desc: 'Atteindre le niveau 16', done: lvl >= 16, current: clamp(lvl, 16), target: 16 },
+    { icon: '🏆', name: 'Quête accomplie', desc: `Atteindre ${goal} kg`, done: reached, current: dir === 0 ? (reached ? 1 : 0) : Math.round(goalDistanceDone * 10) / 10, target: dir === 0 ? 1 : Math.round(goalDistanceTotal * 10) / 10 },
   ]
 
   const quests: Quest[] = [

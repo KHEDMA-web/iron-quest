@@ -1,14 +1,16 @@
-import { useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { CharacterData } from '../types'
 import { archOf } from '../data/classes'
 import { computeGame } from '../lib/gameCompute'
 import { Barbell } from './Barbell'
 import { DayTab } from './tabs/DayTab'
-import { WeightTab } from './tabs/WeightTab'
-import { ProgramTab } from './tabs/ProgramTab'
-import { NutritionTab } from './tabs/NutritionTab'
-import { ShoppingTab } from './tabs/ShoppingTab'
-import { GuildTab } from './tabs/GuildTab'
+import { LevelUpModal, XpToast } from './GameFeedback'
+
+const WeightTab = lazy(() => import('./tabs/WeightTab').then((m) => ({ default: m.WeightTab })))
+const ProgramTab = lazy(() => import('./tabs/ProgramTab').then((m) => ({ default: m.ProgramTab })))
+const NutritionTab = lazy(() => import('./tabs/NutritionTab').then((m) => ({ default: m.NutritionTab })))
+const ShoppingTab = lazy(() => import('./tabs/ShoppingTab').then((m) => ({ default: m.ShoppingTab })))
+const GuildTab = lazy(() => import('./tabs/GuildTab').then((m) => ({ default: m.GuildTab })))
 
 const TABS = [
   ['jour', 'Jour'],
@@ -32,6 +34,9 @@ interface GameProps {
 export function Game({ data, onUpdate, onSwitch, onDelete, saveErr }: GameProps) {
   const [tab, setTab] = useState<TabId>('jour')
   const [resetArmed, setResetArmed] = useState(false)
+  const [xpPop, setXpPop] = useState<{ amount: number; key: number } | null>(null)
+  const [levelUp, setLevelUp] = useState<{ lvl: number; rank: ReturnType<typeof computeGame>['rank'] } | null>(null)
+  const prevRef = useRef<{ xp: number; lvl: number } | null>(null)
 
   const game = computeGame(data)
   const { profile, cls, rank, nextRank, lvl, into, need, current, goalDisplay, delta, week, phase, reached, dir, remaining, proj } = {
@@ -39,8 +44,26 @@ export function Game({ data, onUpdate, onSwitch, onDelete, saveErr }: GameProps)
     goalDisplay: profileGoal(data),
   }
 
+  useEffect(() => {
+    const prev = prevRef.current
+    if (prev) {
+      const gained = game.xp - prev.xp
+      if (gained > 0) setXpPop({ amount: gained, key: Date.now() })
+      if (game.lvl > prev.lvl) setLevelUp({ lvl: game.lvl, rank: game.rank })
+    }
+    prevRef.current = { xp: game.xp, lvl: game.lvl }
+  }, [game.xp, game.lvl, game.rank])
+
+  useEffect(() => {
+    if (!xpPop) return
+    const t = setTimeout(() => setXpPop(null), 1600)
+    return () => clearTimeout(t)
+  }, [xpPop])
+
   return (
     <div className="mx-auto min-h-screen max-w-[520px] px-3.5 pb-10 pt-4">
+      {xpPop && <XpToast key={xpPop.key} amount={xpPop.amount} />}
+      {levelUp && <LevelUpModal lvl={levelUp.lvl} rank={levelUp.rank} onDismiss={() => setLevelUp(null)} />}
       <header className="px-0.5 pt-0.5">
         <div className="flex items-center gap-2.5">
           <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl border-2 border-accent bg-surface2 text-2xl" aria-hidden>
@@ -52,7 +75,7 @@ export function Game({ data, onUpdate, onSwitch, onDelete, saveErr }: GameProps)
             </p>
             <p className="m-0 mt-px text-xs text-accent">
               {rank.icon} {rank.name} · Niveau {lvl}
-              {nextRank && <span className="text-muted"> · {nextRank.name} au niv. {nextRank.min}</span>}
+              {nextRank && <span className="whitespace-nowrap text-muted"> · {nextRank.name} au niv. {nextRank.min}</span>}
             </p>
             <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface2" role="progressbar" aria-valuenow={into} aria-valuemax={need} aria-label="Progression du niveau">
               <div className="h-full bg-purple transition-[width] duration-200" style={{ width: `${(into / need) * 100}%` }} />
@@ -108,20 +131,22 @@ export function Game({ data, onUpdate, onSwitch, onDelete, saveErr }: GameProps)
       {saveErr && <p className="rounded-2xl border border-line bg-surface p-4 text-sm text-red">Sauvegarde échouée — refais une action pour réessayer.</p>}
 
       {tab === 'jour' && <DayTab data={data} game={game} persist={onUpdate} />}
-      {tab === 'poids' && <WeightTab data={data} game={game} persist={onUpdate} />}
-      {tab === 'prog' && (
-        <ProgramTab
-          data={data}
-          game={game}
-          persist={onUpdate}
-          onSwitch={onSwitch}
-          resetArmed={resetArmed}
-          onDeleteClick={() => (resetArmed ? onDelete() : setResetArmed(true))}
-        />
-      )}
-      {tab === 'nutri' && <NutritionTab game={game} />}
-      {tab === 'courses' && <ShoppingTab data={data} game={game} persist={onUpdate} />}
-      {tab === 'guilde' && <GuildTab game={game} />}
+      <Suspense fallback={<p className="p-4 text-center text-sm text-muted">Chargement…</p>}>
+        {tab === 'poids' && <WeightTab data={data} game={game} persist={onUpdate} />}
+        {tab === 'prog' && (
+          <ProgramTab
+            data={data}
+            game={game}
+            persist={onUpdate}
+            onSwitch={onSwitch}
+            resetArmed={resetArmed}
+            onDeleteClick={() => (resetArmed ? onDelete() : setResetArmed(true))}
+          />
+        )}
+        {tab === 'nutri' && <NutritionTab game={game} />}
+        {tab === 'courses' && <ShoppingTab data={data} game={game} persist={onUpdate} />}
+        {tab === 'guilde' && <GuildTab game={game} />}
+      </Suspense>
     </div>
   )
 }

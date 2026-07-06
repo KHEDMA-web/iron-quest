@@ -74,11 +74,21 @@ export function GuildTab({ game }: GuildTabProps) {
       <div className="mb-3 rounded-2xl border border-line bg-surface p-4">
         <p className="m-0 font-display text-[14.5px] font-semibold uppercase tracking-wide">🎖️ Hauts faits</p>
         {achievements.map((a) => (
-          <div key={a.name} className={`flex items-center gap-2.5 py-1.5 ${a.done ? '' : 'opacity-45'}`}>
+          <div key={a.name} className={`flex items-center gap-2.5 py-1.5 ${a.done ? '' : 'opacity-70'}`}>
             <span className="w-7 text-lg">{a.done ? a.icon : '🔒'}</span>
             <span className="flex-1">
               <span className={`text-[13.5px] ${a.done ? 'font-semibold text-ink' : 'font-normal text-muted'}`}>{a.name}</span>
               <span className="block text-[11.5px] text-muted">{a.desc}</span>
+              {!a.done && (
+                <span className="mt-1 flex items-center gap-1.5">
+                  <span className="h-1 flex-1 overflow-hidden rounded-full bg-surface2">
+                    <span className="block h-full rounded-full bg-accent transition-[width] duration-300" style={{ width: `${Math.min(100, (a.current / a.target) * 100)}%` }} />
+                  </span>
+                  <span className="shrink-0 text-[10px] tabular-nums text-muted">
+                    {a.current}/{a.target}
+                  </span>
+                </span>
+              )}
             </span>
             {a.done && <span className="text-[13px] text-green">✓</span>}
           </div>

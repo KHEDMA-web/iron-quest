@@ -68,7 +68,7 @@ export function CharacterSelect({ store, saveErr, onSelect, onCreate }: Characte
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-[520px] px-3.5 pb-10 pt-4">
+    <div className="mx-auto flex min-h-screen max-w-[520px] flex-col justify-center px-3.5 pb-10 pt-4">
       <div className="pt-6 text-center">
         <p className="m-0 font-display text-[11.5px] font-semibold tracking-[2.5px] text-accent">IRON QUEST</p>
         <h1 className="m-0 mt-0.5 font-display text-[38px] font-bold leading-tight">
