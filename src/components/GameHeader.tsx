@@ -22,7 +22,7 @@ export function GameHeader({ game, onOpenProfile }: GameHeaderProps) {
             {profile.pseudo} <span className="text-xs font-normal text-muted">· {cls.name}</span>
           </p>
           <p className="m-0 mt-px flex flex-wrap items-baseline gap-x-1.5 text-xs text-accent">
-            <span>
+            <span key={lvl} className="level-flash">
               {rank.icon} {rank.name} · Niveau {lvl}
             </span>
             {nextRank && <span className="text-muted">· {nextRank.name} au niv. {nextRank.min}</span>}

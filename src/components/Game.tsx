@@ -5,6 +5,7 @@ import { useToasts } from '../hooks/useToasts'
 import { useGameEvents } from '../hooks/useGameEvents'
 import { GameHeader } from './GameHeader'
 import { ToastStack } from './ToastStack'
+import { LevelUpBurst } from './LevelUpBurst'
 import { ProfileScreen } from './ProfileScreen'
 import { DayTab } from './tabs/DayTab'
 import { ProgramTab } from './tabs/ProgramTab'
@@ -32,13 +33,15 @@ export function Game({ data, onUpdate, onSignOut, onDelete, saveErr }: GameProps
   const [tab, setTab] = useState<TabId>('jour')
   const [resetArmed, setResetArmed] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [levelUp, setLevelUp] = useState<number | null>(null)
 
   const game = computeGame(data)
   const { toasts, push } = useToasts()
-  useGameEvents(game, push)
+  useGameEvents(game, push, setLevelUp)
 
   return (
     <div className="mx-auto min-h-screen max-w-[520px] px-3.5 pb-10 pt-4">
+      <LevelUpBurst level={levelUp} onDone={() => setLevelUp(null)} />
       <ToastStack toasts={toasts} />
       <GameHeader game={game} onOpenProfile={() => setProfileOpen(true)} />
 

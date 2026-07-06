@@ -3,7 +3,7 @@ import type { GameCompute } from '../lib/gameCompute'
 import type { ToastPush } from './useToasts'
 
 /** Détecte les passages de niveau et les hauts faits nouvellement débloqués pour déclencher des toasts. */
-export function useGameEvents(game: GameCompute, push: ToastPush) {
+export function useGameEvents(game: GameCompute, push: ToastPush, onLevelUp?: (lvl: number) => void) {
   const prevLvl = useRef(game.lvl)
   const prevDone = useRef(new Set(game.achievements.filter((a) => a.done).map((a) => a.name)))
   const mounted = useRef(false)
@@ -18,6 +18,7 @@ export function useGameEvents(game: GameCompute, push: ToastPush) {
 
     if (game.lvl > prevLvl.current) {
       push({ icon: '⬆️', title: `NIVEAU ${game.lvl}`, subtitle: `${game.rank.icon} ${game.rank.name}` })
+      onLevelUp?.(game.lvl)
     }
     prevLvl.current = game.lvl
 
@@ -27,5 +28,5 @@ export function useGameEvents(game: GameCompute, push: ToastPush) {
       }
     }
     prevDone.current = new Set(game.achievements.filter((a) => a.done).map((a) => a.name))
-  }, [game, push])
+  }, [game, push, onLevelUp])
 }
