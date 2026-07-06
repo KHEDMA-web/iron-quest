@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { CharacterData } from '../../types'
 import type { GameCompute } from '../../lib/gameCompute'
@@ -13,21 +13,23 @@ interface WeightTabProps {
 }
 
 /** Progression des charges par exercice, dérivée des séances loggées. */
-function LiftProgress({ data }: { data: CharacterData }) {
-  const byExo: Record<string, { day: string; w: number }[]> = {}
-  data.workouts.forEach((wo) => {
-    Object.entries(wo.weights).forEach(([exo, w]) => {
-      ;(byExo[exo] ||= []).push({ day: wo.day, w })
+const LiftProgress = memo(function LiftProgress({ data }: { data: CharacterData }) {
+  const rows = useMemo(() => {
+    const byExo: Record<string, { day: string; w: number }[]> = {}
+    data.workouts.forEach((wo) => {
+      Object.entries(wo.weights).forEach(([exo, w]) => {
+        ;(byExo[exo] ||= []).push({ day: wo.day, w })
+      })
     })
-  })
-  const rows = Object.entries(byExo)
-    .map(([exo, hist]) => {
-      const first = hist[0]
-      const last = hist[hist.length - 1]
-      return { exo, n: hist.length, first: first.w, last: last.w, delta: Math.round((last.w - first.w) * 10) / 10 }
-    })
-    .sort((a, b) => b.n - a.n)
-    .slice(0, 10)
+    return Object.entries(byExo)
+      .map(([exo, hist]) => {
+        const first = hist[0]
+        const last = hist[hist.length - 1]
+        return { exo, n: hist.length, first: first.w, last: last.w, delta: Math.round((last.w - first.w) * 10) / 10 }
+      })
+      .sort((a, b) => b.n - a.n)
+      .slice(0, 10)
+  }, [data.workouts])
 
   if (!rows.length) {
     return (
@@ -60,7 +62,7 @@ function LiftProgress({ data }: { data: CharacterData }) {
       ))}
     </div>
   )
-}
+})
 
 export function WeightTab({ data, game, persist }: WeightTabProps) {
   const { current, proj, dir, profile } = game
@@ -76,27 +78,32 @@ export function WeightTab({ data, game, persist }: WeightTabProps) {
   const deleteWeighIn = (index: number) => persist({ ...data, weighIns: data.weighIns.filter((_, j) => j !== index) })
 
   const goal = profile.goal
-  const chartData: { name: string; poids: number | null; projection: number | null }[] = data.weighIns.map((w) => ({
-    name: fmtDate(w.date),
-    poids: w.weight,
-    projection: null,
-  }))
-  // Trace la tendance en pointillés depuis la dernière pesée jusqu'à l'arrivée estimée.
-  if (proj?.date && chartData.length >= 2) {
-    const last = data.weighIns[data.weighIns.length - 1]
-    chartData[chartData.length - 1].projection = last.weight
-    const lastT = new Date(last.date).getTime()
-    const endT = proj.date.getTime()
-    const steps = 4
-    for (let i = 1; i <= steps; i++) {
-      const t = lastT + ((endT - lastT) * i) / steps
-      chartData.push({
-        name: fmtDate(new Date(t).toISOString()),
-        poids: null,
-        projection: Math.round((last.weight + proj.slope * ((t - lastT) / 86400000)) * 10) / 10,
-      })
+  // useMemo : recharts re-layoute tout le graphe dès que data change d'identité,
+  // il ne faut pas reconstruire ce tableau à chaque frappe dans le champ pesée.
+  const chartData = useMemo(() => {
+    const points: { name: string; poids: number | null; projection: number | null }[] = data.weighIns.map((w) => ({
+      name: fmtDate(w.date),
+      poids: w.weight,
+      projection: null,
+    }))
+    // Trace la tendance en pointillés depuis la dernière pesée jusqu'à l'arrivée estimée.
+    if (proj?.date && points.length >= 2) {
+      const last = data.weighIns[data.weighIns.length - 1]
+      points[points.length - 1].projection = last.weight
+      const lastT = new Date(last.date).getTime()
+      const endT = proj.date.getTime()
+      const steps = 4
+      for (let i = 1; i <= steps; i++) {
+        const t = lastT + ((endT - lastT) * i) / steps
+        points.push({
+          name: fmtDate(new Date(t).toISOString()),
+          poids: null,
+          projection: Math.round((last.weight + proj.slope * ((t - lastT) / 86400000)) * 10) / 10,
+        })
+      }
     }
-  }
+    return points
+  }, [data.weighIns, proj])
   const yMin = Math.min(profile.startWeight, goal, current) - 2
   const yMax = Math.max(profile.startWeight, goal, current) + 2
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { computeGame } from './gameCompute'
+import { dayKey } from './dates'
 import { computeTargets } from '../data/classes'
 import { emptyChar, type CharacterData } from '../types'
 
@@ -52,10 +53,7 @@ describe('computeGame', () => {
 
   it('counts consecutive full training weeks as a streak', () => {
     const now = Date.now()
-    const iso = (daysAgo: number) => {
-      const d = new Date(now - daysAgo * 86400000)
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    }
+    const iso = (daysAgo: number) => dayKey(new Date(now - daysAgo * 86400000))
     // 2 workouts/week target, filled for this week and last week
     const workouts = [iso(0), iso(1), iso(7), iso(8)].map((day) => ({ day, phase: 1, session: 'Haut A', weights: {} }))
     const game = computeGame(makeChar({ workouts, profile: { ...makeChar().profile!, days: [1, 2] } }))

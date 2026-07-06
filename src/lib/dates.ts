@@ -17,8 +17,10 @@ export const currentPhase = (week: number): Phase =>
   PHASES.find((p) => week >= p.from && week <= p.to) || PHASES[2]
 
 export const isoWeek = (dstr: string) => {
-  const d = new Date(dstr)
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  // Parse les composants à la main : new Date('YYYY-MM-DD') serait interprété
+  // en UTC minuit puis relu en heure locale, décalant d'un jour à l'ouest d'UTC.
+  const [y, m, dd] = dstr.slice(0, 10).split('-').map(Number)
+  const date = new Date(Date.UTC(y, m - 1, dd))
   const day = date.getUTCDay() || 7
   date.setUTCDate(date.getUTCDate() + 4 - day)
   const ys = new Date(Date.UTC(date.getUTCFullYear(), 0, 1))

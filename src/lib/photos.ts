@@ -57,6 +57,19 @@ export async function listPhotos(charId: string): Promise<ProgressPhoto[]> {
   return photos.sort((a, b) => a.date.localeCompare(b.date))
 }
 
+/** Efface toutes les photos d'un personnage (appelé à sa suppression). */
+export async function deleteAllPhotos(charId: string): Promise<void> {
+  const photos = await listPhotos(charId)
+  const db = await openDb()
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite')
+    photos.forEach((p) => tx.objectStore(STORE).delete(p.id))
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  })
+  db.close()
+}
+
 export async function deletePhoto(id: number): Promise<void> {
   const db = await openDb()
   await new Promise<void>((resolve, reject) => {

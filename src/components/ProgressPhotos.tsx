@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { addPhoto, compressImage, deletePhoto, listPhotos, type ProgressPhoto } from '../lib/photos'
 import { fmtDate } from '../lib/dates'
 
@@ -12,12 +12,14 @@ export function ProgressPhotos({ charId }: ProgressPhotosProps) {
   const [busy, setBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const reload = () => listPhotos(charId).then(setPhotos).catch(() => setErr('Photos indisponibles sur cet appareil.'))
+  const reload = useCallback(
+    () => listPhotos(charId).then(setPhotos).catch(() => setErr('Photos indisponibles sur cet appareil.')),
+    [charId],
+  )
 
   useEffect(() => {
     void reload()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [charId])
+  }, [reload])
 
   const onFile = async (file: File) => {
     setBusy(true)

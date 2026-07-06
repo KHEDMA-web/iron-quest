@@ -66,11 +66,19 @@ export function DayTab({ data, game, persist }: DayTabProps) {
     const items = editItems.split('\n').map((s) => s.trim()).filter(Boolean)
     if (!items.length) return
     const base = meals.find((m) => m.id === mealId)!
+    // Number.isFinite et pas || : un 0 explicite (repas allégé) doit être gardé.
+    const kcalV = parseInt(editKcal, 10)
+    const protV = parseInt(editProt, 10)
     persist({
       ...data,
       mealOverrides: {
         ...data.mealOverrides,
-        [`${dow}-${mealId}`]: { items, kcal: parseInt(editKcal, 10) || base.kcal, p: parseInt(editProt, 10) || base.p, custom: true },
+        [`${dow}-${mealId}`]: {
+          items,
+          kcal: Number.isFinite(kcalV) && kcalV >= 0 ? kcalV : base.kcal,
+          p: Number.isFinite(protV) && protV >= 0 ? protV : base.p,
+          custom: true,
+        },
       },
     })
     setEditMeal(null)
@@ -147,7 +155,7 @@ export function DayTab({ data, game, persist }: DayTabProps) {
                       </p>
                       {lastW && (
                         <p className="m-0 mt-0.5 text-xs text-muted">
-                          Dernière fois : {lastW} kg → vise <b className="text-green">{String(lastW + 2.5).replace('.0', '')} kg</b>
+                          Dernière fois : {lastW} kg → vise <b className="text-green">{(lastW + 2.5).toFixed(1).replace(/\.0$/, '')} kg</b>
                         </p>
                       )}
                       {cue && !swapped && <p className="m-0 mt-0.5 text-[11.5px] italic text-muted">{cue}</p>}

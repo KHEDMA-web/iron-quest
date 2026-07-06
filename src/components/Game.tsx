@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { CharacterData } from '../types'
 import { archOf } from '../data/classes'
 import { computeGame } from '../lib/gameCompute'
@@ -40,11 +40,11 @@ export function Game({ data, onUpdate, onSwitch, onDelete, saveErr }: GameProps)
   const [levelUp, setLevelUp] = useState<{ lvl: number; rank: ReturnType<typeof computeGame>['rank'] } | null>(null)
   const prevRef = useRef<{ xp: number; lvl: number } | null>(null)
 
-  const game = computeGame(data)
-  const { profile, cls, rank, nextRank, lvl, into, need, current, goalDisplay, delta, week, phase, reached, dir, remaining, proj } = {
-    ...game,
-    goalDisplay: profileGoal(data),
-  }
+  // data est remplacé immutablement à chaque persist : useMemo est exact ici et
+  // évite de recalculer XP/projection/achievements à chaque clic d'onglet ou toast.
+  const game = useMemo(() => computeGame(data), [data])
+  const { profile, cls, rank, nextRank, lvl, into, need, current, delta, week, phase, reached, dir, remaining, proj } = game
+  const goalDisplay = profile.goal
 
   useEffect(() => {
     const prev = prevRef.current
@@ -63,7 +63,7 @@ export function Game({ data, onUpdate, onSwitch, onDelete, saveErr }: GameProps)
   }, [xpPop])
 
   useEffect(() => {
-    checkReminders({
+    void checkReminders({
       dayKey: game.tk,
       weekKey: isoWeek(game.tk),
       isTrainDay: game.isTrainDay,
@@ -167,8 +167,4 @@ export function Game({ data, onUpdate, onSwitch, onDelete, saveErr }: GameProps)
       </Suspense>
     </div>
   )
-}
-
-function profileGoal(data: CharacterData) {
-  return data.profile!.goal
 }

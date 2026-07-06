@@ -31,16 +31,45 @@ export function disableReminders() {
   }
 }
 
-/** Une seule notification par type et par jour. */
-function alreadySent(type: string, dayKey: string): boolean {
+function wasSent(type: string, key: string): boolean {
   try {
-    const sent = JSON.parse(localStorage.getItem(SENT_KEY) || '{}')
-    if (sent[type] === dayKey) return true
-    sent[type] = dayKey
-    localStorage.setItem(SENT_KEY, JSON.stringify(sent))
-    return false
+    return JSON.parse(localStorage.getItem(SENT_KEY) || '{}')[type] === key
   } catch {
     return true
+  }
+}
+
+function markSent(type: string, key: string) {
+  try {
+    const sent = JSON.parse(localStorage.getItem(SENT_KEY) || '{}')
+    sent[type] = key
+    localStorage.setItem(SENT_KEY, JSON.stringify(sent))
+  } catch {
+    // rien à faire
+  }
+}
+
+/**
+ * Affiche une notification sans jamais lever d'exception.
+ * Sur Android Chrome, `new Notification()` en contexte page lève « Illegal
+ * constructor » : il faut passer par le service worker (showNotification).
+ */
+async function show(title: string, body: string): Promise<boolean> {
+  const options = { body, icon: '/pwa-192.png' }
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration()
+    if (reg) {
+      await reg.showNotification(title, options)
+      return true
+    }
+  } catch {
+    // on tente le constructeur page ci-dessous
+  }
+  try {
+    new Notification(title, options)
+    return true
+  } catch {
+    return false
   }
 }
 
@@ -53,19 +82,17 @@ export interface ReminderState {
   sessionName: string
 }
 
-/** Vérifie l'état du jour à l'ouverture et notifie ce qui reste à faire. */
-export function checkReminders(s: ReminderState) {
+/** Vérifie l'état du jour à l'ouverture et notifie ce qui reste à faire (max 1/jour par type). */
+export async function checkReminders(s: ReminderState) {
   if (!remindersEnabled()) return
-  if (s.isTrainDay && !s.doneToday && !alreadySent('workout', s.dayKey)) {
-    new Notification('IRON QUEST — jour de séance ⚔️', {
-      body: `${s.sessionName} t'attend. +50 XP à la clé.`,
-      icon: '/pwa-192.png',
-    })
+  if (s.isTrainDay && !s.doneToday && !wasSent('workout', s.dayKey)) {
+    if (await show('IRON QUEST — jour de séance ⚔️', `${s.sessionName} t'attend. +50 XP à la clé.`)) {
+      markSent('workout', s.dayKey)
+    }
   }
-  if (!s.weekWeighIn && !alreadySent('weighin', s.weekKey)) {
-    new Notification('IRON QUEST — pesée hebdo ⚖️', {
-      body: 'Pas encore de pesée cette semaine. Le matin à jeun, +30 XP.',
-      icon: '/pwa-192.png',
-    })
+  if (!s.weekWeighIn && !wasSent('weighin', s.weekKey)) {
+    if (await show('IRON QUEST — pesée hebdo ⚖️', 'Pas encore de pesée cette semaine. Le matin à jeun, +30 XP.')) {
+      markSent('weighin', s.weekKey)
+    }
   }
 }

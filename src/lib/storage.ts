@@ -1,13 +1,23 @@
-import type { Store } from '../types'
+import type { CharacterData, Store } from '../types'
+import { emptyChar } from '../types'
 
 const KEY = 'ironquest-v5'
+
+/** Backfille les champs manquants d'un personnage (vieux schéma, JSON édité à la main). */
+function normalizeChar(char: unknown): CharacterData {
+  return { ...emptyChar, ...(char as Partial<CharacterData>) }
+}
+
+function normalizeProfiles(profiles: Record<string, unknown>): Record<string, CharacterData> {
+  return Object.fromEntries(Object.entries(profiles).map(([id, c]) => [id, normalizeChar(c)]))
+}
 
 export function loadStore(): Store {
   try {
     const raw = localStorage.getItem(KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      return { profiles: parsed.profiles || {}, active: parsed.active || null }
+      return { profiles: normalizeProfiles(parsed.profiles || {}), active: parsed.active || null }
     }
   } catch {
     // localStorage indisponible (navigation privée, quota...) : on repart à vide
@@ -47,7 +57,7 @@ export function parseImportedStore(text: string): Store | string {
         return 'Sauvegarde corrompue : un personnage est invalide.'
       }
     }
-    return { profiles: parsed.profiles, active: typeof parsed.active === 'string' ? parsed.active : null }
+    return { profiles: normalizeProfiles(parsed.profiles), active: typeof parsed.active === 'string' ? parsed.active : null }
   } catch {
     return 'Fichier illisible : ce n’est pas du JSON valide.'
   }

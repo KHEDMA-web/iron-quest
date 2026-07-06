@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CharacterData, Store } from './types'
 import { loadStore, saveStore } from './lib/storage'
+import { deleteAllPhotos } from './lib/photos'
 import { syncLeaderboard } from './lib/supabase'
 import { CharacterSelect } from './components/CharacterSelect'
 import { Game } from './components/Game'
@@ -37,8 +38,12 @@ export default function App() {
       }}
       onSwitch={() => persistStore({ ...store, active: null })}
       onDelete={() => {
+        const id = store.active as string
         const nextProfiles = { ...store.profiles }
-        delete nextProfiles[store.active as string]
+        delete nextProfiles[id]
+        // Efface aussi les photos de progression : un futur personnage au même
+        // pseudo ne doit pas hériter des photos de corps du précédent.
+        void deleteAllPhotos(id).catch(() => {})
         persistStore({ profiles: nextProfiles, active: null })
       }}
     />

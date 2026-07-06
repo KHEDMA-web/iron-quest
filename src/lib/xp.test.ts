@@ -33,7 +33,7 @@ describe('levelFromXp', () => {
 
 describe('computeXp', () => {
   it('is zero for a fresh character', () => {
-    expect(computeXp(emptyChar, 4)).toEqual({ xp: 0, perfectDays: 0, fullWeeks: 0 })
+    expect(computeXp(emptyChar, 4)).toEqual({ xp: 0, perfectDays: 0, fullWeeks: 0, byWeek: {} })
   })
 
   it('sums workout and weigh-in xp', () => {

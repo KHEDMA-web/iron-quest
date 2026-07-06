@@ -47,5 +47,5 @@ export function computeXp(d: CharacterData, weeklyTarget: number) {
   })
   const fullWeeks = Object.values(byWeek).filter((n) => n >= weeklyTarget).length
   xp += fullWeeks * XP.fullWeek
-  return { xp, perfectDays, fullWeeks }
+  return { xp, perfectDays, fullWeeks, byWeek }
 }

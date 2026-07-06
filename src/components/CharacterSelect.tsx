@@ -261,12 +261,14 @@ export function CharacterSelect({ store, saveErr, onSelect, onCreate }: Characte
                 {obDays.length} jour{obDays.length > 1 ? 's' : ''}/semaine · évite 2 jours de suite si possible (récupération)
               </p>
 
-              {w > 0 && parseInt(obHeight, 10) > 0 && parseInt(obAge, 10) > 0 && (
-                <p className="mt-2.5 text-center text-xs text-accent">
-                  → Tes cibles calculées : <b>{computeTargets(cls.id, w, parseInt(obHeight, 10), parseInt(obAge, 10), obSex).kcal} kcal</b> et{' '}
-                  <b>{computeTargets(cls.id, w, parseInt(obHeight, 10), parseInt(obAge, 10), obSex).prot} g de protéines</b> / jour
-                </p>
-              )}
+              {w > 0 && parseInt(obHeight, 10) > 0 && parseInt(obAge, 10) > 0 && (() => {
+                const t = computeTargets(cls.id, w, parseInt(obHeight, 10), parseInt(obAge, 10), obSex)
+                return (
+                  <p className="mt-2.5 text-center text-xs text-accent">
+                    → Tes cibles calculées : <b>{t.kcal} kcal</b> et <b>{t.prot} g de protéines</b> / jour
+                  </p>
+                )
+              })()}
 
               {obErr && <p className="mt-2 text-center text-sm text-red">{obErr}</p>}
               <button onClick={submit} className="mt-3 w-full rounded-[10px] bg-accent px-4 py-3 font-display text-sm font-semibold uppercase tracking-wide text-[#1A1A1A]">

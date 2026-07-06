@@ -98,7 +98,7 @@ export function computeGame(data: CharacterData): GameCompute {
   const remaining = Math.round(Math.abs(goal - current) * 10) / 10
   const reached = dir !== 0 && (dir > 0 ? current >= goal : current <= goal)
 
-  const { xp, perfectDays, fullWeeks } = computeXp(data, weeklyTarget)
+  const { xp, perfectDays, fullWeeks, byWeek } = computeXp(data, weeklyTarget)
   const { lvl, into, need } = levelFromXp(xp)
   const rank = rankOf(lvl)
   const nextRank = RANKS.find((r) => r.min > lvl)
@@ -119,20 +119,18 @@ export function computeGame(data: CharacterData): GameCompute {
 
   const wkIso = isoWeek(tk)
   const weekWorkouts = data.workouts.filter((w) => isoWeek(w.day) === wkIso).length
-  const weekWeighIn = data.weighIns.some((w) => isoWeek(w.date.slice(0, 10)) === wkIso)
+  // dayKey(new Date(...)) : jour LOCAL de la pesée — w.date est un instant UTC,
+  // son jour calendaire UTC peut être la veille pour un utilisateur à l'est d'UTC.
+  const weekWeighIn = data.weighIns.some((w) => isoWeek(dayKey(new Date(w.date))) === wkIso)
   const perfectToday = meals.every((m) => mealsToday[m.id])
 
   // Streak : semaines consécutives à l'objectif de séances, en remontant.
   // La semaine en cours compte si elle est déjà pleine, sinon elle ne casse pas le streak.
-  const workoutsByWeek: Record<string, number> = {}
-  data.workouts.forEach((w) => {
-    const k = isoWeek(w.day)
-    workoutsByWeek[k] = (workoutsByWeek[k] || 0) + 1
-  })
-  let streak = (workoutsByWeek[wkIso] || 0) >= weeklyTarget ? 1 : 0
+  // byWeek vient de computeXp : même bucketing par semaine ISO, pas de recalcul.
+  let streak = (byWeek[wkIso] || 0) >= weeklyTarget ? 1 : 0
   for (let back = 1; back <= 520; back++) {
     const k = isoWeek(dayKey(new Date(today.getTime() - back * 7 * 86400000)))
-    if ((workoutsByWeek[k] || 0) >= weeklyTarget) streak++
+    if ((byWeek[k] || 0) >= weeklyTarget) streak++
     else break
   }
 
@@ -151,7 +149,8 @@ export function computeGame(data: CharacterData): GameCompute {
     { icon: '⚖️', name: 'Suivi sérieux', desc: '8 pesées enregistrées', done: data.weighIns.length >= 8, current: clamp(data.weighIns.length, 8), target: 8 },
     { icon: '🥈', name: 'Guerrier', desc: 'Atteindre le niveau 7', done: lvl >= 7, current: clamp(lvl, 7), target: 7 },
     { icon: '💎', name: 'Champion', desc: 'Atteindre le niveau 16', done: lvl >= 16, current: clamp(lvl, 16), target: 16 },
-    { icon: '🏆', name: 'Quête accomplie', desc: `Atteindre ${goal} kg`, done: reached, current: dir === 0 ? (reached ? 1 : 0) : Math.round(goalDistanceDone * 10) / 10, target: dir === 0 ? 1 : Math.round(goalDistanceTotal * 10) / 10 },
+    // dir === 0 : pas d'objectif de poids, la quête reste à 0/1 (reached exige dir !== 0).
+    { icon: '🏆', name: 'Quête accomplie', desc: `Atteindre ${goal} kg`, done: reached, current: dir === 0 ? 0 : Math.round(goalDistanceDone * 10) / 10, target: dir === 0 ? 1 : Math.round(goalDistanceTotal * 10) / 10 },
   ]
 
   const quests: Quest[] = [
