@@ -1,18 +1,19 @@
 import type { CharacterData } from '../types'
 import type { GameCompute } from '../lib/gameCompute'
 import { WeightTab } from './tabs/WeightTab'
+import { CompanionCard } from './CompanionCard'
 
 interface ProfileScreenProps {
   data: CharacterData
   game: GameCompute
   persist: (next: CharacterData) => void
   onBack: () => void
-  onSwitch: () => void
+  onSignOut: () => void
   resetArmed: boolean
   onDeleteClick: () => void
 }
 
-export function ProfileScreen({ data, game, persist, onBack, onSwitch, resetArmed, onDeleteClick }: ProfileScreenProps) {
+export function ProfileScreen({ data, game, persist, onBack, onSignOut, resetArmed, onDeleteClick }: ProfileScreenProps) {
   const { rank, nextRank, lvl, into, need, xp, streak, achievements } = game
   const doneAchievements = achievements.filter((a) => a.done).length
 
@@ -21,6 +22,8 @@ export function ProfileScreen({ data, game, persist, onBack, onSwitch, resetArme
       <button onClick={onBack} className="mb-3 flex items-center gap-1.5 text-sm text-muted">
         <span aria-hidden>‹</span> Retour
       </button>
+
+      <CompanionCard game={game} />
 
       <div className="mb-3 rounded-2xl border border-line bg-surface p-4">
         <p className="m-0 font-display text-[14.5px] font-semibold uppercase tracking-wide">🎫 Ta fiche de perso</p>
@@ -57,8 +60,8 @@ export function ProfileScreen({ data, game, persist, onBack, onSwitch, resetArme
       <WeightTab data={data} game={game} persist={persist} />
 
       <div className="mt-3 rounded-2xl border border-line bg-surface p-4 text-center">
-        <button onClick={onSwitch} className="mb-2 w-full rounded-[10px] border border-line px-4 py-2.5 text-sm text-muted">
-          👥 Changer de personnage
+        <button onClick={onSignOut} className="mb-2 w-full rounded-[10px] border border-line px-4 py-2.5 text-sm text-muted">
+          🚪 Se déconnecter
         </button>
         <button onClick={onDeleteClick} className={`w-full rounded-[10px] border px-4 py-2.5 text-sm ${resetArmed ? 'border-red text-red' : 'border-line text-muted'}`}>
           {resetArmed ? 'Confirmer : supprimer CE personnage et ses données ?' : 'Supprimer ce personnage'}

@@ -90,11 +90,6 @@ export interface CharacterData {
   exoSwaps: Record<string, string>
 }
 
-export interface Store {
-  profiles: Record<string, CharacterData>
-  active: string | null
-}
-
 /** [nom, séries×reps, repos, consigne] */
 export type Exercise = [string, string, string, string]
 

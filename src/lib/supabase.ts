@@ -28,13 +28,14 @@ const fromRow = (r: LeaderboardRow): LeaderboardEntry => ({
   updatedAt: r.updated_at,
 })
 
-/** Fire-and-forget : publie l'entrée de guilde du perso actif. Échec silencieux si Supabase n'est pas configuré. */
-export async function syncLeaderboard(d: CharacterData): Promise<void> {
+/** Fire-and-forget : publie l'entrée de guilde du compte connecté. Échec silencieux si Supabase n'est pas configuré. */
+export async function syncLeaderboard(userId: string, d: CharacterData): Promise<void> {
   if (!supabase || !d.profile) return
   const { xp } = computeXp(d, d.profile.days.length)
   const { lvl } = levelFromXp(xp)
   try {
     await supabase.from('leaderboard').upsert({
+      user_id: userId,
       pseudo: d.profile.pseudo,
       cls: d.profile.cls,
       lvl,
@@ -60,5 +61,48 @@ export async function loadLeaderboard(): Promise<LeaderboardEntry[]> {
     return (data as LeaderboardRow[]).map(fromRow)
   } catch {
     return []
+  }
+}
+
+/** `false` seulement si le pseudo est confirmé pris ; `true` par défaut (hors ligne, pas configuré, erreur réseau). */
+export async function isPseudoAvailable(pseudo: string): Promise<boolean> {
+  if (!supabase) return true
+  try {
+    const { count, error } = await supabase.from('leaderboard').select('pseudo', { count: 'exact', head: true }).ilike('pseudo', pseudo)
+    if (error) return true
+    return (count ?? 0) === 0
+  } catch {
+    return true
+  }
+}
+
+export async function loadCharacter(userId: string): Promise<CharacterData | null> {
+  if (!supabase) return null
+  try {
+    const { data, error } = await supabase.from('characters').select('data').eq('user_id', userId).maybeSingle()
+    if (error || !data) return null
+    return data.data as CharacterData
+  } catch {
+    return null
+  }
+}
+
+/** Fire-and-forget : sauvegarde le perso dans le compte. Échec silencieux, le cache local reste la source immédiate. */
+export async function saveCharacterRemote(userId: string, char: CharacterData): Promise<void> {
+  if (!supabase) return
+  try {
+    await supabase.from('characters').upsert({ user_id: userId, data: char, updated_at: new Date().toISOString() })
+  } catch {
+    // sauvegarde cloud indisponible, le cache local prend le relais
+  }
+}
+
+export async function deleteCharacterRemote(userId: string): Promise<void> {
+  if (!supabase) return
+  try {
+    await supabase.from('characters').delete().eq('user_id', userId)
+    await supabase.from('leaderboard').delete().eq('user_id', userId)
+  } catch {
+    // suppression cloud indisponible
   }
 }

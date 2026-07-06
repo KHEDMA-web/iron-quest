@@ -23,12 +23,12 @@ type TabId = (typeof TABS)[number][0]
 interface GameProps {
   data: CharacterData
   onUpdate: (next: CharacterData) => void
-  onSwitch: () => void
+  onSignOut: () => void
   onDelete: () => void
   saveErr: boolean
 }
 
-export function Game({ data, onUpdate, onSwitch, onDelete, saveErr }: GameProps) {
+export function Game({ data, onUpdate, onSignOut, onDelete, saveErr }: GameProps) {
   const [tab, setTab] = useState<TabId>('jour')
   const [resetArmed, setResetArmed] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -49,7 +49,7 @@ export function Game({ data, onUpdate, onSwitch, onDelete, saveErr }: GameProps)
             game={game}
             persist={onUpdate}
             onBack={() => setProfileOpen(false)}
-            onSwitch={onSwitch}
+            onSignOut={onSignOut}
             resetArmed={resetArmed}
             onDeleteClick={() => (resetArmed ? onDelete() : setResetArmed(true))}
           />

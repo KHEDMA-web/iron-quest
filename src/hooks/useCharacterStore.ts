@@ -1,37 +1,56 @@
-import { useState } from 'react'
-import type { CharacterData, Store } from '../types'
-import { loadStore, saveStore } from '../lib/storage'
-import { syncLeaderboard } from '../lib/supabase'
+import { useEffect, useState } from 'react'
+import type { CharacterData } from '../types'
+import { clearCachedCharacter, loadCachedCharacter, saveCachedCharacter } from '../lib/storage'
+import { deleteCharacterRemote, loadCharacter, saveCharacterRemote, syncLeaderboard } from '../lib/supabase'
 
-export function useCharacterStore() {
-  const [store, setStore] = useState<Store>(() => loadStore())
+/** Perso unique lié au compte connecté (userId) : cache local instantané + source de vérité Supabase. */
+export function useCharacterStore(userId: string | null) {
+  const [char, setChar] = useState<CharacterData | null>(null)
+  const [loading, setLoading] = useState(true)
   const [saveErr, setSaveErr] = useState(false)
 
-  const persistStore = (next: Store) => {
-    setStore(next)
-    setSaveErr(!saveStore(next))
+  useEffect(() => {
+    if (!userId) {
+      setChar(null)
+      setLoading(false)
+      return
+    }
+    let active = true
+    setLoading(true)
+    const cached = loadCachedCharacter(userId)
+    if (cached) setChar(cached)
+
+    loadCharacter(userId).then((remote) => {
+      if (!active) return
+      if (remote) {
+        setChar(remote)
+        saveCachedCharacter(userId, remote)
+      } else if (cached) {
+        // Créé hors-ligne ou sync cloud précédente ratée : on retente de le pousser.
+        void saveCharacterRemote(userId, cached)
+      }
+      setLoading(false)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [userId])
+
+  const persist = (next: CharacterData) => {
+    if (!userId) return
+    setChar(next)
+    setSaveErr(!saveCachedCharacter(userId, next))
+    void saveCharacterRemote(userId, next)
+    void syncLeaderboard(userId, next)
   }
 
-  const active = store.active && store.profiles[store.active] ? store.profiles[store.active] : null
-
-  const selectCharacter = (id: string) => persistStore({ ...store, active: id })
-
-  const createCharacter = (id: string, char: CharacterData) => persistStore({ profiles: { ...store.profiles, [id]: char }, active: id })
-
-  const updateActive = (next: CharacterData) => {
-    if (!store.active) return
-    persistStore({ ...store, profiles: { ...store.profiles, [store.active]: next } })
-    void syncLeaderboard(next)
+  const deleteCharacter = () => {
+    if (!userId) return
+    clearCachedCharacter(userId)
+    void deleteCharacterRemote(userId)
+    setChar(null)
   }
 
-  const switchCharacter = () => persistStore({ ...store, active: null })
-
-  const deleteActive = () => {
-    if (!store.active) return
-    const nextProfiles = { ...store.profiles }
-    delete nextProfiles[store.active]
-    persistStore({ profiles: nextProfiles, active: null })
-  }
-
-  return { store, active, saveErr, selectCharacter, createCharacter, updateActive, switchCharacter, deleteActive }
+  return { char, loading, saveErr, createCharacter: persist, updateActive: persist, deleteCharacter }
 }
