@@ -58,6 +58,7 @@ export interface GameCompute {
   shopDone: number
   achievements: Achievement[]
   quests: Quest[]
+  streak: number
 }
 
 export function applyExoName(data: CharacterData, name: string): string {
@@ -121,6 +122,20 @@ export function computeGame(data: CharacterData): GameCompute {
   const weekWeighIn = data.weighIns.some((w) => isoWeek(w.date.slice(0, 10)) === wkIso)
   const perfectToday = meals.every((m) => mealsToday[m.id])
 
+  // Streak : semaines consécutives à l'objectif de séances, en remontant.
+  // La semaine en cours compte si elle est déjà pleine, sinon elle ne casse pas le streak.
+  const workoutsByWeek: Record<string, number> = {}
+  data.workouts.forEach((w) => {
+    const k = isoWeek(w.day)
+    workoutsByWeek[k] = (workoutsByWeek[k] || 0) + 1
+  })
+  let streak = (workoutsByWeek[wkIso] || 0) >= weeklyTarget ? 1 : 0
+  for (let back = 1; back <= 520; back++) {
+    const k = isoWeek(dayKey(new Date(today.getTime() - back * 7 * 86400000)))
+    if ((workoutsByWeek[k] || 0) >= weeklyTarget) streak++
+    else break
+  }
+
   const goalDistanceTotal = Math.abs(goal - startW) || 1
   const goalDistanceDone = Math.min(Math.abs(current - startW), goalDistanceTotal)
   const clamp = (n: number, target: number) => Math.min(n, target)
@@ -153,6 +168,6 @@ export function computeGame(data: CharacterData): GameCompute {
     profile, cls, trainDays, weeklyTarget, week, phase, tk, dow, isTrainDay, doneToday, session,
     current, delta, dir, proj, remaining, reached, xp, lvl, into, need, rank, nextRank,
     barbellPct, barbellLabel, meals, mealsToday, weekWorkouts, weekWeighIn, perfectToday,
-    shopWeek, shopChecked, shopTotal, shopDone, achievements, quests,
+    shopWeek, shopChecked, shopTotal, shopDone, achievements, quests, streak,
   }
 }

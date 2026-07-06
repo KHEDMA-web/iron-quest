@@ -5,6 +5,8 @@ import { computeGame } from '../lib/gameCompute'
 import { Barbell } from './Barbell'
 import { DayTab } from './tabs/DayTab'
 import { LevelUpModal, XpToast } from './GameFeedback'
+import { checkReminders } from '../lib/reminders'
+import { isoWeek } from '../lib/dates'
 
 const WeightTab = lazy(() => import('./tabs/WeightTab').then((m) => ({ default: m.WeightTab })))
 const ProgramTab = lazy(() => import('./tabs/ProgramTab').then((m) => ({ default: m.ProgramTab })))
@@ -60,6 +62,19 @@ export function Game({ data, onUpdate, onSwitch, onDelete, saveErr }: GameProps)
     return () => clearTimeout(t)
   }, [xpPop])
 
+  useEffect(() => {
+    checkReminders({
+      dayKey: game.tk,
+      weekKey: isoWeek(game.tk),
+      isTrainDay: game.isTrainDay,
+      doneToday: game.doneToday,
+      weekWeighIn: game.weekWeighIn,
+      sessionName: game.session.name,
+    })
+    // Au montage uniquement : les rappels concernent l'ouverture de l'app.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <div className="mx-auto min-h-screen max-w-[520px] px-3.5 pb-10 pt-4">
       {xpPop && <XpToast key={xpPop.key} amount={xpPop.amount} />}
@@ -75,6 +90,9 @@ export function Game({ data, onUpdate, onSwitch, onDelete, saveErr }: GameProps)
             </p>
             <p className="m-0 mt-px text-xs text-accent">
               {rank.icon} {rank.name} · Niveau {lvl}
+              {game.streak > 0 && (
+                <span className="whitespace-nowrap text-red"> · 🔥 {game.streak} sem.</span>
+              )}
               {nextRank && <span className="whitespace-nowrap text-muted"> · {nextRank.name} au niv. {nextRank.min}</span>}
             </p>
             <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface2" role="progressbar" aria-valuenow={into} aria-valuemax={need} aria-label="Progression du niveau">

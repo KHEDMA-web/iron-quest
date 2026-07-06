@@ -23,3 +23,32 @@ export function saveStore(store: Store): boolean {
     return false
   }
 }
+
+/** Télécharge la sauvegarde complète (tous les personnages) en fichier JSON. */
+export function exportStore() {
+  const blob = new Blob([JSON.stringify({ version: KEY, ...loadStore() }, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `iron-quest-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+/** Restaure une sauvegarde exportée. Retourne le Store ou un message d'erreur. */
+export function parseImportedStore(text: string): Store | string {
+  try {
+    const parsed = JSON.parse(text)
+    if (!parsed || typeof parsed !== 'object' || typeof parsed.profiles !== 'object' || parsed.profiles === null) {
+      return "Ce fichier n'est pas une sauvegarde IRON QUEST valide."
+    }
+    for (const char of Object.values(parsed.profiles as Record<string, unknown>)) {
+      if (!char || typeof char !== 'object' || !('profile' in char) || !('weighIns' in char)) {
+        return 'Sauvegarde corrompue : un personnage est invalide.'
+      }
+    }
+    return { profiles: parsed.profiles, active: typeof parsed.active === 'string' ? parsed.active : null }
+  } catch {
+    return 'Fichier illisible : ce n’est pas du JSON valide.'
+  }
+}

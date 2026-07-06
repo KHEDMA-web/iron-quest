@@ -1,8 +1,11 @@
+import { useRef, useState } from 'react'
 import type { CharacterData } from '../../types'
 import type { GameCompute } from '../../lib/gameCompute'
 import { applyExoName } from '../../lib/gameCompute'
 import { PHASES } from '../../data/phases'
 import { DAYS_FR } from '../../lib/dates'
+import { exportStore, parseImportedStore, saveStore } from '../../lib/storage'
+import { disableReminders, enableReminders, remindersEnabled, remindersSupported } from '../../lib/reminders'
 
 interface ProgramTabProps {
   data: CharacterData
@@ -15,11 +18,34 @@ interface ProgramTabProps {
 
 export function ProgramTab({ data, game, persist, onSwitch, resetArmed, onDeleteClick }: ProgramTabProps) {
   const { cls, phase, trainDays, weeklyTarget } = game
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [importErr, setImportErr] = useState('')
+  const [remindersOn, setRemindersOn] = useState(remindersEnabled())
+  const [remindersMsg, setRemindersMsg] = useState('')
+
+  const toggleReminders = async () => {
+    if (remindersOn) {
+      disableReminders()
+      setRemindersOn(false)
+      setRemindersMsg('')
+    } else {
+      const ok = await enableReminders()
+      setRemindersOn(ok)
+      setRemindersMsg(ok ? '' : 'Notifications refusées par le navigateur — vérifie les réglages du site.')
+    }
+  }
 
   const clearSwap = (orig: string) => {
     const next = { ...data.exoSwaps }
     delete next[orig]
     persist({ ...data, exoSwaps: next })
+  }
+
+  const onImportFile = async (file: File) => {
+    const result = parseImportedStore(await file.text())
+    if (typeof result === 'string') return setImportErr(result)
+    if (!saveStore(result)) return setImportErr('Sauvegarde impossible sur cet appareil (stockage plein ?).')
+    location.reload()
   }
 
   return (
@@ -74,6 +100,51 @@ export function ProgramTab({ data, game, persist, onSwitch, resetArmed, onDelete
           </div>
         )
       })}
+
+      {remindersSupported() && (
+        <div className="mb-3 rounded-2xl border border-line bg-surface p-4">
+          <p className="m-0 font-display text-[14.5px] font-semibold uppercase tracking-wide">🔔 Rappels</p>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+            À l'ouverture de l'appli : rappel de séance les jours d'entraînement et rappel de pesée hebdo. Rien d'autre, promis.
+          </p>
+          <button
+            onClick={toggleReminders}
+            aria-pressed={remindersOn}
+            className={`mt-2.5 w-full rounded-[10px] border px-4 py-2.5 text-sm ${remindersOn ? 'border-accent text-accent' : 'border-line text-muted'}`}
+          >
+            {remindersOn ? '🔔 Rappels activés — toucher pour désactiver' : '🔕 Activer les rappels'}
+          </button>
+          {remindersMsg && <p className="mt-1.5 text-[12.5px] text-red">{remindersMsg}</p>}
+        </div>
+      )}
+
+      <div className="mb-3 rounded-2xl border border-line bg-surface p-4">
+        <p className="m-0 font-display text-[14.5px] font-semibold uppercase tracking-wide">💾 Sauvegarde</p>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+          Ta progression est stockée sur CET appareil. Exporte-la régulièrement (changement de téléphone, réinstallation…).
+        </p>
+        <div className="mt-2.5 flex gap-2">
+          <button onClick={exportStore} className="flex-1 rounded-[10px] border border-line px-4 py-2.5 text-sm text-muted">
+            ⬇️ Exporter
+          </button>
+          <button onClick={() => fileRef.current?.click()} className="flex-1 rounded-[10px] border border-line px-4 py-2.5 text-sm text-muted">
+            ⬆️ Importer
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) void onImportFile(f)
+              e.target.value = ''
+            }}
+          />
+        </div>
+        <p className="mt-1.5 text-[11px] text-muted">L'import remplace TOUTES les données de cet appareil par celles du fichier.</p>
+        {importErr && <p className="mt-1.5 text-[12.5px] text-red">{importErr}</p>}
+      </div>
 
       <div className="rounded-2xl border border-line bg-surface p-4 text-center">
         <button onClick={onSwitch} className="mb-2 w-full rounded-[10px] border border-line px-4 py-2.5 text-sm text-muted">
