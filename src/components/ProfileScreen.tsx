@@ -18,7 +18,7 @@ export function ProfileScreen({ data, game, persist, onBack, onSignOut, resetArm
   const { rank, nextRank, lvl, into, need, xp, streak, achievements } = game
   const doneAchievements = achievements.filter((a) => a.done).length
 
-  const toggleFoodSwap = (swapId: string) => persist({ ...data, foodSwaps: { ...data.foodSwaps, [swapId]: !data.foodSwaps[swapId] } })
+  const toggleFoodSwap = (swapId: string) => persist({ ...data, foodSwaps: { ...data.foodSwaps, [swapId]: !data.foodSwaps?.[swapId] } })
 
   return (
     <section>
@@ -67,7 +67,7 @@ export function ProfileScreen({ data, game, persist, onBack, onSignOut, resetArm
         </p>
         <div className="mt-2.5 flex flex-col gap-2">
           {FOOD_SWAPS.map((swap) => {
-            const on = !!data.foodSwaps[swap.id]
+            const on = !!data.foodSwaps?.[swap.id]
             return (
               <button
                 key={swap.id}

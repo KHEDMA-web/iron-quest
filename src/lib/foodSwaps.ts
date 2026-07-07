@@ -16,8 +16,8 @@ function containsAnyVariant(text: string, swap: FoodSwap): boolean {
 
 /** Applique les allergies/préférences actives à un repas : ingrédient remplacé partout (items,
  * recette) et kcal/protéines réajustés une seule fois par substitution qui touche ce repas. */
-export function applyFoodSwaps(meal: Meal, active: Record<string, boolean>): Meal {
-  const activeSwaps = FOOD_SWAPS.filter((s) => active[s.id])
+export function applyFoodSwaps(meal: Meal, active: Record<string, boolean> | undefined): Meal {
+  const activeSwaps = FOOD_SWAPS.filter((s) => active?.[s.id])
   if (!activeSwaps.length) return meal
 
   let items = meal.items
@@ -38,8 +38,8 @@ export function applyFoodSwaps(meal: Meal, active: Record<string, boolean>): Mea
 }
 
 /** Libellé de l'article de courses, remplacé si l'allergie/préférence associée est active. */
-export function shoppingLabelFor(itemKey: string, defaultLabel: string, active: Record<string, boolean>): string {
-  const swap = FOOD_SWAPS.find((s) => s.shoppingKey === itemKey && active[s.id])
+export function shoppingLabelFor(itemKey: string, defaultLabel: string, active: Record<string, boolean> | undefined): string {
+  const swap = FOOD_SWAPS.find((s) => s.shoppingKey === itemKey && active?.[s.id])
   return swap ? swap.shoppingLabel : defaultLabel
 }
 

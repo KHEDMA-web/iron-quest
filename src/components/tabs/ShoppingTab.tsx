@@ -16,7 +16,7 @@ export function ShoppingTab({ data, game, persist }: ShoppingTabProps) {
   const toggleItem = (id: string) =>
     persist({ ...data, shopping: { ...data.shopping, [shopWeek]: { ...shopChecked, [id]: !shopChecked[id] } } })
 
-  const toggleFoodSwap = (swapId: string) => persist({ ...data, foodSwaps: { ...data.foodSwaps, [swapId]: !data.foodSwaps[swapId] } })
+  const toggleFoodSwap = (swapId: string) => persist({ ...data, foodSwaps: { ...data.foodSwaps, [swapId]: !data.foodSwaps?.[swapId] } })
 
   return (
     <section>
@@ -39,7 +39,7 @@ export function ShoppingTab({ data, game, persist }: ShoppingTabProps) {
           {items.map(([id, label]) => {
             const on = !!shopChecked[id]
             const swap = foodSwapForShoppingKey(id)
-            const swapActive = !!(swap && data.foodSwaps[swap.id])
+            const swapActive = !!(swap && data.foodSwaps?.[swap.id])
             const displayLabel = shoppingLabelFor(id, label, data.foodSwaps)
             return (
               <div key={id} className="flex w-full items-center gap-2 border-b border-line py-2 last:border-b-0">

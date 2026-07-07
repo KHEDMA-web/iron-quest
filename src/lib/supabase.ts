@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import type { CharacterData, LeaderboardEntry } from '../types'
+import { emptyChar } from '../types'
 import { weeksSince } from './dates'
 import { computeXp, levelFromXp } from './xp'
 
@@ -81,7 +82,9 @@ export async function loadCharacter(userId: string): Promise<CharacterData | nul
   try {
     const { data, error } = await supabase.from('characters').select('data').eq('user_id', userId).maybeSingle()
     if (error || !data) return null
-    return data.data as CharacterData
+    // Backfille les champs manquants d'un perso sauvegardé avant l'ajout d'un nouveau champ
+    // (ex: foodSwaps) — même normalisation que le cache local (voir lib/storage.ts).
+    return { ...emptyChar, ...(data.data as Partial<CharacterData>) }
   } catch {
     return null
   }

@@ -26,6 +26,10 @@ describe('applyFoodSwaps', () => {
     expect(applyFoodSwaps(shakeMeal, {})).toBe(shakeMeal)
   })
 
+  it('does not crash on a character saved before foodSwaps existed (undefined, not {})', () => {
+    expect(applyFoodSwaps(shakeMeal, undefined)).toBe(shakeMeal)
+  })
+
   it('leaves an untouched meal unchanged even with swaps active', () => {
     const untouched: Meal = { ...shakeMeal, id: 'x', items: ['2 pavés de saumon'], steps: [] }
     expect(applyFoodSwaps(untouched, { soja: true })).toBe(untouched)
@@ -66,6 +70,10 @@ describe('applyFoodSwaps', () => {
 describe('shoppingLabelFor / foodSwapForShoppingKey', () => {
   it('returns the default label when the swap is inactive', () => {
     expect(shoppingLabelFor('soja', 'Lait de soja — 4 briques', {})).toBe('Lait de soja — 4 briques')
+  })
+
+  it('does not crash when active is undefined (old saved character)', () => {
+    expect(shoppingLabelFor('soja', 'Lait de soja — 4 briques', undefined)).toBe('Lait de soja — 4 briques')
   })
 
   it('returns the swapped label when active', () => {
