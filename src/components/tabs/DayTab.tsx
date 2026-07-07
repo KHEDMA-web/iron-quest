@@ -101,15 +101,22 @@ export function DayTab({ data, game, persist }: DayTabProps) {
     setEditMeal(null)
   }
 
-  /** Repioche une autre recette pour ce créneau (parmi les 7 jours du plan) : ingrédients, kcal et protéines changent avec. */
-  const regenerateMeal = (mealId: string) => {
+  /** Repioche une autre recette pour ce créneau (les 7 jours du plan + le pool de recettes
+   * additionnelles, chargé à la demande pour ne pas alourdir le bundle initial) : ingrédients,
+   * kcal et protéines changent avec. */
+  const regenerateMeal = async (mealId: string) => {
     const current = meals.find((m) => m.id === mealId)
     if (!current) return
     const signature = current.items.join('|')
-    const candidates: { menuName: string; meal: Meal }[] = []
+    const candidates: { menuName: string; meal: Omit<Meal, 'id'> }[] = []
     MENUS.forEach((mn) => {
       const m = mn.meals.find((x) => x.id === mealId)
       if (m && m.items.join('|') !== signature) candidates.push({ menuName: mn.name, meal: m })
+    })
+    const { RECIPE_POOL_B, RECIPE_POOL_D, RECIPE_POOL_L, RECIPE_POOL_S } = await import('../../data/recipePool')
+    const pool = { b: RECIPE_POOL_B, l: RECIPE_POOL_L, s: RECIPE_POOL_S, d: RECIPE_POOL_D }[mealId] || []
+    pool.forEach((r) => {
+      if (r.meal.items.join('|') !== signature) candidates.push({ menuName: r.name, meal: r.meal })
     })
     if (!candidates.length) return
     const pick = candidates[Math.floor(Math.random() * candidates.length)]
