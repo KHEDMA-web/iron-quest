@@ -27,6 +27,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Le nouveau SW prend la main immédiatement (au lieu d'attendre la fermeture de tous les
+        // onglets) : réduit la fenêtre où un onglet resté ouvert référence des chunks JS d'un
+        // déploiement précédent qui n'existent plus sur le serveur.
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
