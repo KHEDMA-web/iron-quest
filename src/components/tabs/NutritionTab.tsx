@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { CharacterData } from '../../types'
-import type { GameCompute } from '../../lib/gameCompute'
+import { getMeal, type GameCompute } from '../../lib/gameCompute'
 import { computeTargetsDetailed } from '../../data/classes'
 import { SWAPS, MENUS } from '../../data/menus'
 import { DAYS_FR, DAYS_SHORT, dayKey, weekDates } from '../../lib/dates'
@@ -155,22 +155,25 @@ export function NutritionTab({ data, game, persist }: NutritionTabProps) {
             </button>
           ))}
         </div>
-        {recipeMenu.meals.map((m) => (
-          <div key={m.id} className="mb-3 border-b border-line pb-3 last:mb-0 last:border-b-0 last:pb-0">
-            <p className="m-0 flex items-baseline justify-between gap-2">
-              <span className="font-display text-[13.5px] font-semibold uppercase tracking-wide text-accent">{m.title}</span>
-              <span className="whitespace-nowrap text-[11px] text-muted">
-                {m.kcal} kcal · {m.p} g P
-              </span>
-            </p>
-            <p className="m-0 mt-1 text-[12.5px] text-muted">{m.items.join(' · ')}</p>
-            <ol className="m-0 mt-1.5 list-decimal space-y-1 pl-4 text-[12.5px] leading-relaxed text-ink">
-              {m.steps.map((s, i) => (
-                <li key={i}>{s}</li>
-              ))}
-            </ol>
-          </div>
-        ))}
+        {recipeMenu.meals.map((raw) => {
+          const m = getMeal(data, recipeDay, raw)
+          return (
+            <div key={m.id} className="mb-3 border-b border-line pb-3 last:mb-0 last:border-b-0 last:pb-0">
+              <p className="m-0 flex items-baseline justify-between gap-2">
+                <span className="font-display text-[13.5px] font-semibold uppercase tracking-wide text-accent">{m.title}</span>
+                <span className="whitespace-nowrap text-[11px] text-muted">
+                  {m.kcal} kcal · {m.p} g P
+                </span>
+              </p>
+              <p className="m-0 mt-1 text-[12.5px] text-muted">{m.items.join(' · ')}</p>
+              <ol className="m-0 mt-1.5 list-decimal space-y-1 pl-4 text-[12.5px] leading-relaxed text-ink">
+                {m.steps.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ol>
+            </div>
+          )
+        })}
       </Disclosure>
 
       <Disclosure icon="💱" title="Introuvable ou trop cher ? Remplace." subtitle={`${SWAPS.length} équivalences malines`}>

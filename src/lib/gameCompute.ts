@@ -6,6 +6,7 @@ import { currentPhase, dayKey, isoWeek, weeksSince } from './dates'
 import { computeXp, levelFromXp, RANKS, rankOf, XP } from './xp'
 import { projection, type Projection } from './projection'
 import { computeStreak, type Streak } from './streak'
+import { applyFoodSwaps } from './foodSwaps'
 
 export interface Quest {
   name: string
@@ -72,7 +73,8 @@ export function applyExoName(data: CharacterData, name: string): string {
 
 export function getMeal(data: CharacterData, dayIdx: number, m: Meal): Meal {
   const ov = data.mealOverrides[`${dayIdx}-${m.id}`]
-  return ov ? { ...m, ...ov } : m
+  const base = ov ? { ...m, ...ov } : m
+  return applyFoodSwaps(base, data.foodSwaps)
 }
 
 export function computeGame(data: CharacterData): GameCompute {
@@ -103,17 +105,21 @@ export function computeGame(data: CharacterData): GameCompute {
   const remaining = Math.round(Math.abs(goal - current) * 10) / 10
   const reached = dir !== 0 && (dir > 0 ? current >= goal : current <= goal)
 
+  // Distance parcourue DANS LE SENS de l'objectif, jamais négative : si le poids part dans le
+  // mauvais sens (ex. objectif -20 kg mais le poids monte), la progression reste à 0 au lieu de
+  // se remplir comme si on avançait.
+  const goalDistanceTotal = Math.abs(goal - startW) || 1
+  const goalDistanceDone = dir === 0 ? 0 : Math.max(0, Math.min(dir > 0 ? current - startW : startW - current, goalDistanceTotal))
+
   const { xp, perfectDays, fullWeeks, byWeek } = computeXp(data, weeklyTarget)
   const { lvl, into, need } = levelFromXp(xp)
   const rank = rankOf(lvl)
   const nextRank = RANKS.find((r) => r.min > lvl)
   const streak = computeStreak(data)
 
-  const barbellPct = dir === 0 ? into / need : Math.abs(current - startW) / Math.abs(goal - startW)
+  const barbellPct = dir === 0 ? into / need : goalDistanceDone / goalDistanceTotal
   const barbellLabel =
-    dir === 0
-      ? `NIVEAU ${lvl}`
-      : `${Math.abs(Math.round((current - startW) * 10) / 10)} / ${Math.abs(Math.round((goal - startW) * 10) / 10)} KG`
+    dir === 0 ? `NIVEAU ${lvl}` : `${Math.round(goalDistanceDone * 10) / 10} / ${Math.round(goalDistanceTotal * 10) / 10} KG`
 
   const meals = MENUS[dow].meals.map((m) => getMeal(data, dow, m))
   const mealsToday = data.meals[tk] || {}
@@ -141,8 +147,6 @@ export function computeGame(data: CharacterData): GameCompute {
     else break
   }
 
-  const goalDistanceTotal = Math.abs(goal - startW) || 1
-  const goalDistanceDone = Math.min(Math.abs(current - startW), goalDistanceTotal)
   const clamp = (n: number, target: number) => Math.min(n, target)
 
   const achievements: Achievement[] = [

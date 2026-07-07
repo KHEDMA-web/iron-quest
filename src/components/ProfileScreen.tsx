@@ -2,6 +2,7 @@ import type { CharacterData } from '../types'
 import type { GameCompute } from '../lib/gameCompute'
 import { WeightTab } from './tabs/WeightTab'
 import { CompanionCard } from './CompanionCard'
+import { FOOD_SWAPS } from '../data/foodSwaps'
 
 interface ProfileScreenProps {
   data: CharacterData
@@ -16,6 +17,8 @@ interface ProfileScreenProps {
 export function ProfileScreen({ data, game, persist, onBack, onSignOut, resetArmed, onDeleteClick }: ProfileScreenProps) {
   const { rank, nextRank, lvl, into, need, xp, streak, achievements } = game
   const doneAchievements = achievements.filter((a) => a.done).length
+
+  const toggleFoodSwap = (swapId: string) => persist({ ...data, foodSwaps: { ...data.foodSwaps, [swapId]: !data.foodSwaps[swapId] } })
 
   return (
     <section>
@@ -54,6 +57,39 @@ export function ProfileScreen({ data, game, persist, onBack, onSignOut, resetArm
             </p>
             <p className="m-0 text-[11px] text-muted">Détails dans l'onglet Guilde</p>
           </div>
+        </div>
+      </div>
+
+      <div className="mb-3 rounded-2xl border border-line bg-surface p-4">
+        <p className="m-0 font-display text-[14.5px] font-semibold uppercase tracking-wide">🚫 Allergies & préférences</p>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+          Active ce que tu ne peux pas ou ne veux pas manger : remplacé automatiquement dans les recettes, le suivi des repas et la liste de courses.
+        </p>
+        <div className="mt-2.5 flex flex-col gap-2">
+          {FOOD_SWAPS.map((swap) => {
+            const on = !!data.foodSwaps[swap.id]
+            return (
+              <button
+                key={swap.id}
+                onClick={() => toggleFoodSwap(swap.id)}
+                aria-pressed={on}
+                className={`flex items-center gap-3 rounded-[10px] border px-3 py-2.5 text-left ${on ? 'border-accent bg-surface2' : 'border-line bg-surface2'}`}
+              >
+                <span
+                  className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 text-sm font-bold text-bg"
+                  style={{ background: on ? '#FFB020' : 'transparent', borderColor: on ? '#FFB020' : '#8B93A1' }}
+                >
+                  {on ? '✓' : ''}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13.5px]">{swap.label}</span>
+                  <span className="block text-[11px] text-muted">
+                    {on ? `Remplacé par : ${swap.replacement}` : swap.reason}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
 

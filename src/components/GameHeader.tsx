@@ -28,7 +28,7 @@ export function GameHeader({ game, onOpenProfile }: GameHeaderProps) {
             {nextRank && <span className="text-muted">· {nextRank.name} au niv. {nextRank.min}</span>}
             {streak.current > 0 && (
               <span
-                className={streak.activeToday ? 'pulse-glow rounded px-1 text-accent' : 'text-red'}
+                className={streak.activeToday ? 'glow-accent rounded px-1 text-accent' : 'text-red'}
                 title={streak.activeToday ? 'Série active — fais une action aujourd\'hui pour la garder demain.' : 'Série en danger : fais une action aujourd\'hui !'}
               >
                 · 🔥 {streak.current} j

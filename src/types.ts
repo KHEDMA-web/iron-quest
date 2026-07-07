@@ -88,6 +88,8 @@ export interface CharacterData {
   shopping: Record<string, Record<string, boolean>>
   mealOverrides: Record<string, MealOverride>
   exoSwaps: Record<string, string>
+  /** Allergies/préférences actives : clé = FoodSwap.id (src/data/foodSwaps.ts). */
+  foodSwaps: Record<string, boolean>
 }
 
 /** [nom, séries×reps, repos, consigne] */
@@ -134,4 +136,5 @@ export const emptyChar: CharacterData = {
   shopping: {},
   mealOverrides: {},
   exoSwaps: {},
+  foodSwaps: {},
 }

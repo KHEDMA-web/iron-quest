@@ -1,6 +1,7 @@
 import type { CharacterData } from '../../types'
 import type { GameCompute } from '../../lib/gameCompute'
 import { SHOPPING } from '../../data/shopping'
+import { foodSwapForShoppingKey, shoppingLabelFor } from '../../lib/foodSwaps'
 import { Gauge } from '../Gauge'
 
 interface ShoppingTabProps {
@@ -14,6 +15,8 @@ export function ShoppingTab({ data, game, persist }: ShoppingTabProps) {
 
   const toggleItem = (id: string) =>
     persist({ ...data, shopping: { ...data.shopping, [shopWeek]: { ...shopChecked, [id]: !shopChecked[id] } } })
+
+  const toggleFoodSwap = (swapId: string) => persist({ ...data, foodSwaps: { ...data.foodSwaps, [swapId]: !data.foodSwaps[swapId] } })
 
   return (
     <section>
@@ -35,16 +38,31 @@ export function ShoppingTab({ data, game, persist }: ShoppingTabProps) {
           <p className="m-0 mb-1 border-b border-line pb-1 font-display text-[13px] uppercase tracking-wide text-muted">{cat}</p>
           {items.map(([id, label]) => {
             const on = !!shopChecked[id]
+            const swap = foodSwapForShoppingKey(id)
+            const swapActive = !!(swap && data.foodSwaps[swap.id])
+            const displayLabel = shoppingLabelFor(id, label, data.foodSwaps)
             return (
-              <button key={id} onClick={() => toggleItem(id)} aria-pressed={on} className={`flex w-full items-center gap-3 border-b border-line py-2 text-ink last:border-b-0 ${on ? 'opacity-55' : ''}`}>
-                <span
-                  className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 text-sm font-bold text-bg"
-                  style={{ background: on ? '#57C88B' : 'transparent', borderColor: on ? '#57C88B' : '#8B93A1' }}
-                >
-                  {on ? '✓' : ''}
-                </span>
-                <span className={`text-left text-[13.5px] ${on ? 'line-through' : ''}`}>{label}</span>
-              </button>
+              <div key={id} className="flex w-full items-center gap-2 border-b border-line py-2 last:border-b-0">
+                <button onClick={() => toggleItem(id)} aria-pressed={on} className={`flex min-w-0 flex-1 items-center gap-3 text-ink ${on ? 'opacity-55' : ''}`}>
+                  <span
+                    className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 text-sm font-bold text-bg"
+                    style={{ background: on ? '#57C88B' : 'transparent', borderColor: on ? '#57C88B' : '#8B93A1' }}
+                  >
+                    {on ? '✓' : ''}
+                  </span>
+                  <span className={`text-left text-[13.5px] ${on ? 'line-through' : ''}`}>{displayLabel}</span>
+                </button>
+                {swap && (
+                  <button
+                    onClick={() => toggleFoodSwap(swap.id)}
+                    aria-pressed={swapActive}
+                    title={swapActive ? `Remettre ${swap.label}` : `Remplacer (${swap.reason})`}
+                    className={`shrink-0 rounded-md border px-1.5 py-1 text-[11px] ${swapActive ? 'border-accent text-accent' : 'border-line text-muted'}`}
+                  >
+                    🔄
+                  </button>
+                )}
+              </div>
             )
           })}
         </div>
