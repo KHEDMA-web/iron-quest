@@ -103,3 +103,47 @@ npx vitest run     # 23 tests unitaires (lib/)
   (cosmétique, extraction possible en `FilePickerButton`).
 - Pas de vrais comptes : le pseudo est l'identité (design d'origine, voir la
   note de sécurité du README).
+
+## Reste à faire (backlog priorisé)
+
+### P0 — pour mettre en service
+1. **Merger la branche dans `main`** (ouvrir une PR `claude/remaining-tasks-yfm7zn`
+   → `main`). La CI (lint + tests + build) doit être verte.
+2. **Configurer Supabase** pour activer la guilde : créer le projet, exécuter
+   `supabase/schema.sql`, remplir `.env` d'après `.env.example`. Vérifier
+   l'onglet Guilde (classement + bouton actualiser) avec 2 pseudos.
+3. **Déployer** (Netlify/Vercel/Pages). Penser aux variables d'env Supabase
+   côté hébergeur. Tester l'installation PWA sur un vrai téléphone Android +
+   iOS (icône, offline, notifications de rappel opt-in).
+
+### P1 — fiabilité
+4. **Error boundary React** au niveau App : aujourd'hui une exception de rendu
+   = écran blanc. Afficher un fallback avec bouton « exporter ma sauvegarde »
+   (réutiliser `exportStore`) pour ne jamais perdre les données.
+5. **Tests composants** (React Testing Library + jsdom) : onboarding complet,
+   terminer une séance (+50 XP), cocher un repas, éditer un repas à 0 kcal,
+   import d'une sauvegarde invalide → message d'erreur. La logique pure est
+   testée, les composants ne le sont pas.
+6. **Migration de schéma versionnée** : la clé localStorage est `ironquest-v5`
+   figée ; ajouter un champ `version` + fonction de migration plutôt que de
+   compter uniquement sur la normalisation emptyChar.
+
+### P2 — produit
+7. **Icônes SVG cohérentes** à la place des emoji (💪🔥⚔️🛒 rendent
+   différemment selon l'OS). Un set custom = identité visuelle propre.
+8. **Détail des charges par exercice** : tap sur une ligne de « Tes charges »
+   (WeightTab) → mini-graphe de progression de cet exo dans le temps.
+9. **Rappels plus riches** : après 7 jours d'inactivité, notification « ton
+   streak est en danger » ; heure de rappel configurable.
+10. **Comparateur de photos amélioré** : slider avant/après superposé,
+    choix manuel des deux photos comparées (aujourd'hui : première vs dernière).
+11. **Partage de résultats** : générer une image (canvas) « niveau X, +N kg,
+    streak Y semaines » à partager, sans exposer les données privées.
+
+### P3 — plus tard
+12. Extraire `FilePickerButton` (dédup ProgramTab/ProgressPhotos).
+13. Sons/haptique optionnels sur level-up (navigator.vibrate).
+14. Mode « nouvelle quête » guidé quand l'objectif de poids est atteint
+    (aujourd'hui : simple message, l'utilisateur doit recréer un perso pour
+    changer d'objectif — permettre d'éditer l'objectif en place).
+15. i18n si audience non francophone (tout le texte est en dur en français).
