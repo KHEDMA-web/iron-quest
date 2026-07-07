@@ -50,5 +50,5 @@ export function computeXp(d: CharacterData, weeklyTarget: number) {
   xp += fullWeeks * XP.fullWeek
   const streakMilestones = streakMilestonesReached(computeStreak(d).longest)
   xp += streakMilestones * XP.streakMilestone
-  return { xp, perfectDays, fullWeeks, streakMilestones }
+  return { xp, perfectDays, fullWeeks, streakMilestones, byWeek }
 }

@@ -45,6 +45,16 @@ export function GuildTab({ game }: GuildTabProps) {
                 <span className="min-w-0 flex-1">
                   <span className={`text-[13.5px] ${a.done ? `font-semibold ${tier.text}` : 'font-normal text-muted'}`}>{a.name}</span>
                   <span className="block text-[11.5px] text-muted">{a.desc}</span>
+                  {!a.done && (
+                    <span className="mt-1 flex items-center gap-1.5">
+                      <span className="h-1 flex-1 overflow-hidden rounded-full bg-surface2">
+                        <span className="block h-full rounded-full bg-accent transition-[width] duration-300" style={{ width: `${Math.min(100, (a.current / a.target) * 100)}%` }} />
+                      </span>
+                      <span className="shrink-0 text-[10px] tabular-nums text-muted">
+                        {a.current}/{a.target}
+                      </span>
+                    </span>
+                  )}
                 </span>
                 <span className={`shrink-0 text-[10px] uppercase tracking-wide ${a.done ? tier.text : 'text-muted'}`}>{tier.label}</span>
               </div>

@@ -18,9 +18,14 @@ describe('levelFromXp', () => {
 })
 
 describe('rankOf', () => {
-  it('picks the highest rank reached', () => {
+  it('returns Recrue below level 4', () => {
     expect(rankOf(1).name).toBe('Recrue')
-    expect(rankOf(6).name).toBe('Soldat')
+    expect(rankOf(3).name).toBe('Recrue')
+  })
+
+  it('picks the highest rank reached', () => {
+    expect(rankOf(4).name).toBe('Soldat')
+    expect(rankOf(10).name).toBe('Guerrier')
     expect(rankOf(30).name).toBe('Légende')
     expect(rankOf(1000).name).toBe(RANKS[RANKS.length - 1].name)
   })
@@ -50,5 +55,17 @@ describe('computeXp', () => {
     const { xp, perfectDays } = computeXp(data, 4)
     expect(perfectDays).toBe(1)
     expect(xp).toBe(4 * XP.meal + XP.perfectDay)
+  })
+
+  it('awards a full-week bonus once workouts in a week reach the target', () => {
+    const data = {
+      ...emptyChar,
+      workouts: [
+        { day: '2026-07-06', phase: 1, session: 'Haut A', weights: {} },
+        { day: '2026-07-07', phase: 1, session: 'Bas A', weights: {} },
+      ],
+    }
+    const { fullWeeks } = computeXp(data, 2)
+    expect(fullWeeks).toBe(1)
   })
 })

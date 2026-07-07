@@ -21,6 +21,8 @@ export interface Achievement {
   desc: string
   done: boolean
   tier: AchievementTier
+  current: number
+  target: number
 }
 
 export interface GameCompute {
@@ -48,6 +50,7 @@ export interface GameCompute {
   rank: Rank
   nextRank: Rank | undefined
   streak: Streak
+  weekStreak: number
   barbellPct: number
   barbellLabel: string
   meals: Meal[]
@@ -100,7 +103,7 @@ export function computeGame(data: CharacterData): GameCompute {
   const remaining = Math.round(Math.abs(goal - current) * 10) / 10
   const reached = dir !== 0 && (dir > 0 ? current >= goal : current <= goal)
 
-  const { xp, perfectDays, fullWeeks } = computeXp(data, weeklyTarget)
+  const { xp, perfectDays, fullWeeks, byWeek } = computeXp(data, weeklyTarget)
   const { lvl, into, need } = levelFromXp(xp)
   const rank = rankOf(lvl)
   const nextRank = RANKS.find((r) => r.min > lvl)
@@ -122,28 +125,46 @@ export function computeGame(data: CharacterData): GameCompute {
 
   const wkIso = isoWeek(tk)
   const weekWorkouts = data.workouts.filter((w) => isoWeek(w.day) === wkIso).length
-  const weekWeighIn = data.weighIns.some((w) => isoWeek(w.date.slice(0, 10)) === wkIso)
+  // dayKey(new Date(...)) : jour LOCAL de la pesée — w.date est un instant UTC,
+  // son jour calendaire UTC peut être la veille pour un utilisateur à l'est d'UTC.
+  const weekWeighIn = data.weighIns.some((w) => isoWeek(dayKey(new Date(w.date))) === wkIso)
   const perfectToday = meals.every((m) => mealsToday[m.id])
 
+  // Streak semaines : semaines consécutives à l'objectif de séances, en remontant
+  // (distinct du streak "jours" ci-dessus, utilisé pour la flamme d'entraînement du header).
+  // La semaine en cours compte si elle est déjà pleine, sinon elle ne casse pas le streak.
+  // byWeek vient de computeXp : même bucketing par semaine ISO, pas de recalcul.
+  let weekStreak = (byWeek[wkIso] || 0) >= weeklyTarget ? 1 : 0
+  for (let back = 1; back <= 520; back++) {
+    const k = isoWeek(dayKey(new Date(today.getTime() - back * 7 * 86400000)))
+    if ((byWeek[k] || 0) >= weeklyTarget) weekStreak++
+    else break
+  }
+
+  const goalDistanceTotal = Math.abs(goal - startW) || 1
+  const goalDistanceDone = Math.min(Math.abs(current - startW), goalDistanceTotal)
+  const clamp = (n: number, target: number) => Math.min(n, target)
+
   const achievements: Achievement[] = [
-    { icon: '🩸', name: 'Premier sang', desc: 'Première séance terminée', done: data.workouts.length >= 1, tier: 'commun' },
-    { icon: '🔟', name: "L'habitué", desc: '10 séances', done: data.workouts.length >= 10, tier: 'commun' },
-    { icon: '🏋️', name: 'Machine de guerre', desc: '50 séances', done: data.workouts.length >= 50, tier: 'rare' },
-    { icon: '💯', name: 'Vétéran du fer', desc: '100 séances', done: data.workouts.length >= 100, tier: 'epique' },
-    { icon: '🦾', name: 'Immortel', desc: '200 séances', done: data.workouts.length >= 200, tier: 'legendaire' },
-    { icon: '📅', name: 'Semaine parfaite', desc: `Une semaine à ${weeklyTarget}/${weeklyTarget} séances`, done: fullWeeks >= 1, tier: 'commun' },
-    { icon: '🗓️', name: 'Le métronome', desc: '5 semaines parfaites', done: fullWeeks >= 5, tier: 'rare' },
-    { icon: '🍽️', name: 'Discipline de moine', desc: '10 journées nutrition parfaites', done: perfectDays >= 10, tier: 'rare' },
-    { icon: '⚖️', name: 'Suivi sérieux', desc: '8 pesées enregistrées', done: data.weighIns.length >= 8, tier: 'commun' },
-    { icon: '🔥', name: 'Ça chauffe', desc: '7 jours de suite avec une action', done: streak.longest >= 7, tier: 'commun' },
-    { icon: '🐉', name: 'Série légendaire', desc: '30 jours de suite avec une action', done: streak.longest >= 30, tier: 'epique' },
-    { icon: '👑', name: 'Inarrêtable', desc: '100 jours de suite avec une action', done: streak.longest >= 100, tier: 'legendaire' },
-    { icon: '🍳', name: 'Cuisinier', desc: '5 repas personnalisés à ta sauce', done: Object.keys(data.mealOverrides).length >= 5, tier: 'commun' },
-    { icon: '🧺', name: 'Ravitailleur', desc: 'Liste de courses de la semaine complétée', done: shopDone > 0 && shopDone === shopTotal, tier: 'rare' },
-    { icon: '🥈', name: 'Guerrier', desc: 'Atteindre le niveau 7', done: lvl >= 7, tier: 'commun' },
-    { icon: '💎', name: 'Champion', desc: 'Atteindre le niveau 16', done: lvl >= 16, tier: 'rare' },
-    { icon: '⚡', name: 'Maître', desc: 'Atteindre le niveau 22', done: lvl >= 22, tier: 'epique' },
-    { icon: '🏆', name: 'Quête accomplie', desc: `Atteindre ${goal} kg`, done: reached, tier: 'legendaire' },
+    { icon: '🩸', name: 'Premier sang', desc: 'Première séance terminée', done: data.workouts.length >= 1, tier: 'commun', current: clamp(data.workouts.length, 1), target: 1 },
+    { icon: '🔟', name: "L'habitué", desc: '10 séances', done: data.workouts.length >= 10, tier: 'commun', current: clamp(data.workouts.length, 10), target: 10 },
+    { icon: '🏋️', name: 'Machine de guerre', desc: '50 séances', done: data.workouts.length >= 50, tier: 'rare', current: clamp(data.workouts.length, 50), target: 50 },
+    { icon: '💯', name: 'Vétéran du fer', desc: '100 séances', done: data.workouts.length >= 100, tier: 'epique', current: clamp(data.workouts.length, 100), target: 100 },
+    { icon: '🦾', name: 'Immortel', desc: '200 séances', done: data.workouts.length >= 200, tier: 'legendaire', current: clamp(data.workouts.length, 200), target: 200 },
+    { icon: '📅', name: 'Semaine parfaite', desc: `Une semaine à ${weeklyTarget}/${weeklyTarget} séances`, done: fullWeeks >= 1, tier: 'commun', current: clamp(fullWeeks, 1), target: 1 },
+    { icon: '🗓️', name: 'Le métronome', desc: '5 semaines parfaites', done: fullWeeks >= 5, tier: 'rare', current: clamp(fullWeeks, 5), target: 5 },
+    { icon: '🍽️', name: 'Discipline de moine', desc: '10 journées nutrition parfaites', done: perfectDays >= 10, tier: 'rare', current: clamp(perfectDays, 10), target: 10 },
+    { icon: '⚖️', name: 'Suivi sérieux', desc: '8 pesées enregistrées', done: data.weighIns.length >= 8, tier: 'commun', current: clamp(data.weighIns.length, 8), target: 8 },
+    { icon: '🔥', name: 'Ça chauffe', desc: '7 jours de suite avec une action', done: streak.longest >= 7, tier: 'commun', current: clamp(streak.longest, 7), target: 7 },
+    { icon: '🐉', name: 'Série légendaire', desc: '30 jours de suite avec une action', done: streak.longest >= 30, tier: 'epique', current: clamp(streak.longest, 30), target: 30 },
+    { icon: '👑', name: 'Inarrêtable', desc: '100 jours de suite avec une action', done: streak.longest >= 100, tier: 'legendaire', current: clamp(streak.longest, 100), target: 100 },
+    { icon: '🍳', name: 'Cuisinier', desc: '5 repas personnalisés à ta sauce', done: Object.keys(data.mealOverrides).length >= 5, tier: 'commun', current: clamp(Object.keys(data.mealOverrides).length, 5), target: 5 },
+    { icon: '🧺', name: 'Ravitailleur', desc: 'Liste de courses de la semaine complétée', done: shopDone > 0 && shopDone === shopTotal, tier: 'rare', current: clamp(shopDone, shopTotal || 1), target: shopTotal || 1 },
+    { icon: '🥈', name: 'Guerrier', desc: 'Atteindre le niveau 7', done: lvl >= 7, tier: 'commun', current: clamp(lvl, 7), target: 7 },
+    { icon: '💎', name: 'Champion', desc: 'Atteindre le niveau 16', done: lvl >= 16, tier: 'rare', current: clamp(lvl, 16), target: 16 },
+    { icon: '⚡', name: 'Maître', desc: 'Atteindre le niveau 22', done: lvl >= 22, tier: 'epique', current: clamp(lvl, 22), target: 22 },
+    // dir === 0 : pas d'objectif de poids, la quête reste à 0/1 (reached exige dir !== 0).
+    { icon: '🏆', name: 'Quête accomplie', desc: `Atteindre ${goal} kg`, done: reached, tier: 'legendaire', current: dir === 0 ? 0 : Math.round(goalDistanceDone * 10) / 10, target: dir === 0 ? 1 : Math.round(goalDistanceTotal * 10) / 10 },
   ]
 
   const quests: Quest[] = [
@@ -163,7 +184,7 @@ export function computeGame(data: CharacterData): GameCompute {
 
   return {
     profile, cls, trainDays, weeklyTarget, week, phase, tk, dow, isTrainDay, doneToday, session,
-    current, delta, dir, proj, remaining, reached, xp, lvl, into, need, rank, nextRank, streak,
+    current, delta, dir, proj, remaining, reached, xp, lvl, into, need, rank, nextRank, streak, weekStreak,
     barbellPct, barbellLabel, meals, mealsToday, weekWorkouts, weekWeighIn, perfectToday,
     shopWeek, shopChecked, shopTotal, shopDone, achievements, quests,
   }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { CharacterData } from '../types'
 import { clearCachedCharacter, loadCachedCharacter, saveCachedCharacter } from '../lib/storage'
 import { deleteCharacterRemote, loadCharacter, saveCharacterRemote, syncLeaderboard } from '../lib/supabase'
+import { deleteAllPhotos } from '../lib/photos'
 
 /** Perso unique lié au compte connecté (userId) : cache local instantané + source de vérité Supabase. */
 export function useCharacterStore(userId: string | null) {
@@ -49,6 +50,10 @@ export function useCharacterStore(userId: string | null) {
     if (!userId) return
     clearCachedCharacter(userId)
     void deleteCharacterRemote(userId)
+    // Un futur personnage (même compte ou pas) ne doit pas hériter des photos du précédent :
+    // ProgressPhotos indexe par pseudo, comme dans WeightTab.
+    const pseudo = char?.profile?.pseudo?.toLowerCase()
+    if (pseudo) void deleteAllPhotos(pseudo).catch(() => {})
     setChar(null)
   }
 
